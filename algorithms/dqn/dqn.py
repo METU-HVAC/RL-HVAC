@@ -3,7 +3,7 @@ import random
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from algorithms.dqn.dqn import DQN
+from algorithms.dqn.network import DQN
 from algorithms.dqn.replay_buffer import ReplayMemory, Transition
 from configs.dqn_config import DQN_CONFIG
 
@@ -12,7 +12,18 @@ device = torch.device(
     "mps" if torch.backends.mps.is_available() else
     "cpu"
 )
+
+
+
+
+
+
+
+     
+
+    
 class DQNAgent:
+    
     def __init__(self, n_observations, n_actions, config=DQN_CONFIG):
         self.policy_net = DQN(n_observations, n_actions).to(device)
         self.target_net = DQN(n_observations, n_actions).to(device)
@@ -30,7 +41,8 @@ class DQNAgent:
         self.eps_end = config["eps_end"]
         self.eps_decay = config["eps_decay"]
         self.tau = config["tau"]
-
+    def store_transition(self,state,action,next_state,reward):
+        self.memory.push(state,action,next_state,reward)
     def select_action(self, state):
         sample = random.random()
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
@@ -41,6 +53,10 @@ class DQNAgent:
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
             return torch.tensor(random.randint(0, self.n_actions - 1), device=device, dtype=torch.long).view(1, 1)
+    def choose_greedy_action(self,state):
+        with torch.no_grad():
+            return self.policy_net(state).max(1).indices.view(1, 1)
+        
 
     def optimize_model(self):
         if len(self.memory) < self.batch_size:
