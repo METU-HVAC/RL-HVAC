@@ -6,3 +6,5 @@ Eplus-env-*
 
 # Ignore sinergym-env directory
 sinergym-env/
+
+EnergyPlusEnvironments/
