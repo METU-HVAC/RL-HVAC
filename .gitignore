@@ -8,3 +8,9 @@ Eplus-env-*
 sinergym-env/
 
 EnergyPlusEnvironments/
+
+.lock
+
+__pycache__/
+
+plots/
