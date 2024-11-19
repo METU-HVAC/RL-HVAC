@@ -7,10 +7,11 @@ import random
 import os
 from sinergym.utils.constants import *
 from algorithms.dqn.dqn import *
-from reward import *
+from environments.reward import *
 import torch
 from sinergym.utils.wrappers import NormalizeObservation
-import shutil
+from common.utils import *
+from environments.environment import create_environment
 # Configuration
 timesteps_per_hour = 12  # 5-minute intervals
 days_per_chunk = 10
@@ -37,29 +38,17 @@ seed = 42  # Set seed for reproducibility
 # Set seeds for reproducibility
 random.seed(seed)
 np.random.seed(seed)
-#Before starting, clear any directories that may have been created in previous runs
-#They start with Eplus-env-* and are created by EnergyPlus
+torch.manual_seed(seed)
 
-
-for root, dirs, files in os.walk(".", topdown=False):
-    for name in dirs:
-        if name.startswith("Eplus-env-"):
-            dir_path = os.path.join(root, name)
-            shutil.rmtree(dir_path)
+remove_previous_run_logs()
         
 # Ensure the plots directory exists
 os.makedirs(plots_dir, exist_ok=True)
 
-# DQN Parameters
 state_size =  12 # Adjust based on the size of your observation space
 action_size = 71  # 70 discrete actions
-gamma = 0.99  # Discount factor
-epsilon = 1.0  # Initial exploration rate
-epsilon_min = 0.01  # Minimum epsilon
-epsilon_decay = (1-0.01)/100  # Epsilon decay rate
-batch_size = 64  # Minibatch size for training
 train_interval = 100 # Train every n steps
-min_buffer_size = 1000  # Start training after buffer fills up
+
 # Initialize the DQN agent
 agent = DQNAgent(state_size, action_size)
 # Observation variables for clarity
@@ -69,28 +58,6 @@ variables = [
     'air_temperature', 'air_humidity', 'people_occupant',
     'HVAC_electricity_demand_rate', 'total_electricity_HVAC'
 ]
-# Helper to create a new environment with given start and end dates
-def create_env(start_date, end_date):
-    extra_params = {
-        'timesteps_per_hour': timesteps_per_hour,
-        'runperiod': (
-            start_date.day, start_date.month, start_date.year,
-            end_date.day, end_date.month, end_date.year
-        )
-    }
-    env = gym.make('Eplus-A403-hot-discrete-v1', 
-                   reward=MyCustomReward,
-                   reward_kwargs={
-                                'temperature_variables': ['air_temperature'],
-                                'energy_variables': ['HVAC_electricity_demand_rate'],
-                                'range_comfort_winter': (20.0, 23.5),
-                                'range_comfort_summer': (23.0, 26.0),
-                                'energy_weight':  0.3,
-                                'lambda_energy':  1e-4,
-                                'lambda_temperature':1.0,
-                                },
-                   config_params=extra_params)
-    return env
 # Helper to normalize an observation
 def normalize_observation(obs, mean, std):
     return (obs - mean) / std
@@ -170,8 +137,7 @@ def plot_and_save(outdoor_temps, htg_setpoints, clg_setpoints,fan_speeds, air_te
 
 # Helper to run simulation and collect data
 def run_simulation(start_date, end_date, episode_type, episode_num):
-    env = create_env(start_date, end_date)  # Create a new environment for the chunk
-
+    env = create_environment(start_date, end_date,MyCustomReward)  # Create a new environment for the chunk
     state, info = env.reset()
     data = state
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
