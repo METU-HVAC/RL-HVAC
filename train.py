@@ -7,7 +7,7 @@ import random
 import os
 from sinergym.utils.constants import *
 from DQN import *
-from reward import *
+from environments.reward import *
 from sinergym.utils.wrappers import NormalizeObservation
 import shutil
 # Configuration
@@ -110,21 +110,12 @@ random.shuffle(chunks)  # Shuffling with the set seed ensures reproducibility
 # 2. Split chunks into train, validation, and test sets
 train_size = int(0.7 * len(chunks))
 val_size = int(0.1 * len(chunks))
-test_size = len(chunks) - train_size - val_size
 
 train_chunks = chunks[:train_size]
 val_chunks = chunks[train_size:train_size + val_size]
 test_chunks = chunks[train_size + val_size:]
 
-# 3. Helper to set environment dates
-def set_env_runperiod(env, start_date, end_date):
-    print(env.get_wrapper_attr('config_params'))
-    env.config.runperiod = (
-        start_date.day, start_date.month, start_date.year,
-        end_date.day, end_date.month, end_date.year
-    )
-    env.reset()
-    
+
 
 # Helper to plot and save data
 def plot_and_save(outdoor_temps, htg_setpoints, clg_setpoints,fan_speeds, air_temps, air_humidities, time_labels, episode_type, episode_num):

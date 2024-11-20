@@ -14,3 +14,5 @@ EnergyPlusEnvironments/
 __pycache__/
 
 plots/
+
+.DS_Store

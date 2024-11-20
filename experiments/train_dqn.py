@@ -12,6 +12,8 @@ import torch
 from sinergym.utils.wrappers import NormalizeObservation
 from common.utils import *
 from environments.environment import create_environment
+from utils.dataset import generate_chunks, split_chunks
+from utils.visualization import plot_and_save
 # Configuration
 timesteps_per_hour = 12  # 5-minute intervals
 days_per_chunk = 10
@@ -20,7 +22,7 @@ steps_per_chunk = timestep_per_day * days_per_chunk
 fan_speed = 0.9  # Float between 0 and 1
 num_episodes = 100  # Total episodes for training
 validation_interval = 3  # Validate every 2 episodes
-plots_dir = "plots"  # Directory to store plots
+plots_dir = "results/plots/dqn"  # Directory to store plots
 extra_params = {
     'timesteps_per_hour': timesteps_per_hour,
     'runperiod':(1,1,1997,12,3,1997)  # Full year simulation
@@ -42,9 +44,6 @@ torch.manual_seed(seed)
 
 remove_previous_run_logs()
         
-# Ensure the plots directory exists
-os.makedirs(plots_dir, exist_ok=True)
-
 state_size =  12 # Adjust based on the size of your observation space
 action_size = 71  # 70 discrete actions
 train_interval = 100 # Train every n steps
@@ -61,87 +60,24 @@ variables = [
 # Helper to normalize an observation
 def normalize_observation(obs, mean, std):
     return (obs - mean) / std
-# Generate 5-day chunks for the entire year
-def generate_chunks():
-    chunks = []
-    start_date = datetime(1997, 1, 1)
-    for i in range(365 // days_per_chunk):
-        chunk_start = start_date + timedelta(days=i * days_per_chunk)
-        chunk_end = chunk_start + timedelta(days=days_per_chunk - 1)
-        chunks.append((chunk_start, chunk_end))
-    return chunks
 
-chunks = generate_chunks()
-random.shuffle(chunks)  # Shuffling with the set seed ensures reproducibility
-
-# 2. Split chunks into train, validation, and test sets
-train_size = int(0.7 * len(chunks))
-val_size = int(0.1 * len(chunks))
-test_size = len(chunks) - train_size - val_size
-
-train_chunks = chunks[:train_size]
-val_chunks = chunks[train_size:train_size + val_size]
-test_chunks = chunks[train_size + val_size:]
-
-# 3. Helper to set environment dates
-def set_env_runperiod(env, start_date, end_date):
-    print(env.get_wrapper_attr('config_params'))
-    env.config.runperiod = (
-        start_date.day, start_date.month, start_date.year,
-        end_date.day, end_date.month, end_date.year
-    )
-    env.reset()
-    
-
-# Helper to plot and save data
-def plot_and_save(outdoor_temps, htg_setpoints, clg_setpoints,fan_speeds, air_temps, air_humidities, time_labels, episode_type, episode_num):
-    plt.figure(figsize=(12, 6))
-    plt.plot(time_labels, outdoor_temps, label='Outdoor Temp (°C)', color='blue')
-    plt.plot(time_labels, htg_setpoints, label='Heating Setpoint (°C)', color='red')
-    plt.plot(time_labels, clg_setpoints, label='Cooling Setpoint (°C)', color='green')
-    plt.plot(time_labels, air_temps, label='Air Temp (°C)', color='orange')
-
-    # Add labels, title, and legend
-    plt.xlabel('Time (HH:MM)')
-    plt.ylabel('Temperature (°C)')
-    plt.title(f'{episode_type} Episode {episode_num}')
-    plt.xticks(range(0, len(time_labels), 100), rotation=45)
-    plt.tight_layout()
-    plt.legend(loc='best')
-    plt.grid(True)
-
-    # Save the plot
-    plot_path = f"{plots_dir}/{episode_type}_episode_{episode_num}.png"
-    plt.savefig(plot_path)
-    plt.close()
-
-    print(f"Saved {episode_type} plot for Episode {episode_num} at {plot_path}")
-    # Plot fan speed data separately
-    plt.figure(figsize=(12, 6))
-    plt.plot(time_labels, fan_speeds, label='Fan Speed (%)', color='purple')
-
-    # Add labels, title, and legend for fan speed plot
-    plt.xlabel('Time (HH:MM)')
-    plt.ylabel('Fan Speed (%)')
-    plt.title(f'{episode_type} Episode {episode_num} - Fan Speed')
-    plt.xticks(range(0, len(time_labels), 100), rotation=45)
-    plt.tight_layout()
-    plt.legend(loc='best')
-    plt.grid(True)
-
-    # Save the fan speed plot
-    fan_speed_plot_path = f"{plots_dir}/{episode_type}_episode_{episode_num}_fan_speed.png"
-    plt.savefig(fan_speed_plot_path)
-    plt.close()
-    print(f"Saved {episode_type} fan speed plot for Episode {episode_num} at {fan_speed_plot_path}")
+# Define parameters
+start_date = datetime(1997, 1, 1)
+days_per_chunk = 10
+total_days = 365
+# Generate and split chunks
+chunks = generate_chunks(start_date, days_per_chunk, total_days)
+train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.2, val_ratio=0.1, seed=seed)
 
 # Helper to run simulation and collect data
 def run_simulation(start_date, end_date, episode_type, episode_num):
     env = create_environment(start_date, end_date,MyCustomReward)  # Create a new environment for the chunk
     state, info = env.reset()
+    
+
     data = state
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
-
+    
     done = False
     outdoor_temps, htg_setpoints, clg_setpoints, power_consumptions = [], [], [],[]
     air_temps, air_humidities, time_labels,fan_speeds = [], [], [],[]
@@ -149,7 +85,8 @@ def run_simulation(start_date, end_date, episode_type, episode_num):
     current_step = 0
     total_reward = 0
     while current_step < steps_per_chunk:
-
+        if state is None:
+            print("State is None")
         state = normalize_observation(state,obs_mean,obs_std_dev)
         if episode_type == "Training":
             action = agent.select_action(state)  # Epsilon-greedy action for training
@@ -239,7 +176,7 @@ for episode in range(1, num_episodes + 1):
     
     with open("train_average_reward.txt", "a") as f:
         f.write(f"Episode {episode}: Train Average Reward = {avg_train_reward} ,Epsilon = {agent.eps_threshold}\n")
-    plot_and_save(**obs_dict, episode_type="Training", episode_num=episode)
+    plot_and_save(**obs_dict, episode_type="Training", episode_num=episode,plots_dir=plots_dir)
     
     # Validation: Full sweep over the validation dataset (without shuffling)
     val_total_reward = 0
@@ -258,14 +195,4 @@ for episode in range(1, num_episodes + 1):
         f.write(f"Episode {episode}: Validation Average Reward = {avg_val_reward}\n")
         f.write(f"Episode {episode}: Validation Average Power Consumption = {avg_val_power}\n")
         f.write(f"Episode {episode}: Validation Average Temperature Violation = {avg_val_temp_violation}\n")
-    plot_and_save(**obs_dict, episode_type="Validation", episode_num=episode)
-
-# # Test after training
-# print("Test Run")
-# test_chunk = random.choice(test_chunks)
-# run_simulation(*test_chunk, "Test", 1)
-
-# # Save all episode rewards to a text file
-# with open("episode_rewards.txt", "w") as f:
-#     for i, reward in enumerate(episode_rewards, 1):
-#         f.write(f"Episode {i}: Reward = {reward}\n")
+    plot_and_save(**obs_dict, episode_type="Validation", episode_num=episode,plots_dir=plots_dir)

@@ -41,14 +41,15 @@ class DQNAgent:
         self.eps_end = config["eps_end"]
         self.eps_decay = config["eps_decay"]
         self.tau = config["tau"]
+        self.eps_threshold = 0
     def store_transition(self,state,action,next_state,reward):
         self.memory.push(state,action,next_state,reward)
     def select_action(self, state):
         sample = random.random()
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
+        self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
             math.exp(-1. * self.steps_done / self.eps_decay)
         self.steps_done += 1
-        if sample > eps_threshold:
+        if sample > self.eps_threshold:
             with torch.no_grad():
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
