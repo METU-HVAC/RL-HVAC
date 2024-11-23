@@ -53,6 +53,18 @@
         "Facility Total HVAC Electricity Demand Rate"                     : {
             "variable_names" : "HVAC_electricity_demand_rate",
             "keys"          : "Whole Building"            
+        },
+        "Zone Thermal Comfort Fanger Model PMV"                           : {
+            "variable_names" : "thermal_comfort_ppd",
+            "keys"          : "A403 189.1-2009 - OFFICE - OPENOFFICE - CZ1-3 PEOPLE"            
+        },
+        "Zone Thermal Comfort Fanger Model PPD"                           : {
+            "variable_names" : "thermal_comfort_pmv",
+            "keys"          : "A403 189.1-2009 - OFFICE - OPENOFFICE - CZ1-3 PEOPLE"            
+        },
+        "Zone Air CO2 Concentration"                                     : {
+            "variable_names" : "air_co2",
+            "keys"          : "TZ-A403"            
         }
     },
 
@@ -75,10 +87,15 @@
             "variable_name" : "Fan_Speed_RL",
             "element_type"  : "Schedule:Year", 
             "value_type"    : "Schedule Value"
+        },
+        "WINDOW_FAN_SCHD"          : {
+            "variable_name" : "Window_Fan_RL",
+            "element_type"  : "Schedule:Year", 
+            "value_type"    : "Schedule Value"
         }
     },
 
-    "action_space"          : "gym.spaces.Box(low=np.array([5.0, 18.0,0.0], dtype=np.float32), high=np.array([30.0, 50.0,1.0], dtype=np.float32), shape=(3,), dtype=np.float32)",
+    "action_space"          : "gym.spaces.Box(low=np.array([5.0, 18.0,0.0,0.0], dtype=np.float32), high=np.array([30.0, 50.0,1.0,1.0], dtype=np.float32), shape=(4,), dtype=np.float32)",
 
     "action_space_discrete" : "gym.spaces.Discrete(70)",
 

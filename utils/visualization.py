@@ -50,7 +50,7 @@ def plot_and_save(
     plot_path = os.path.join(plots_dir, f"{episode_type}_episode_{episode_num}.png")
     plt.savefig(plot_path)
     plt.close()
-    print(f"Saved {episode_type} plot for Episode {episode_num} at {plot_path}")
+    #print(f"Saved {episode_type} plot for Episode {episode_num} at {plot_path}")
 
     # Fan speed plot
     plt.figure(figsize=(12, 6))
@@ -69,4 +69,4 @@ def plot_and_save(
     )
     plt.savefig(fan_speed_plot_path)
     plt.close()
-    print(f"Saved {episode_type} fan speed plot for Episode {episode_num} at {fan_speed_plot_path}")
+    #print(f"Saved {episode_type} fan speed plot for Episode {episode_num} at {fan_speed_plot_path}")

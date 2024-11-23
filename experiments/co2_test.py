@@ -46,7 +46,7 @@ torch.manual_seed(seed)
 
 remove_previous_run_logs()
         
-state_size =  15 # Adjust based on the size of your observation space
+state_size =  12 # Adjust based on the size of your observation space
 action_size = 57  # 70 discrete actions
 train_interval = 100 # Train every n steps
 
@@ -56,10 +56,8 @@ variables = [
     'month', 'day_of_month', 'hour', 'outdoor_temperature',
     'outdoor_humidity', 'htg_setpoint', 'clg_setpoint',
     'air_temperature', 'air_humidity', 'people_occupant',
-    'HVAC_electricity_demand_rate', 'thermal_comfort_ppd',
-    'thermal_comfort_pmv','air_co2','total_electricity_HVAC'
+    'HVAC_electricity_demand_rate', 'total_electricity_HVAC'
 ]
-
 # Helper to normalize an observation
 def normalize_observation(obs, mean, std):
     return (obs - mean) / std
@@ -102,7 +100,7 @@ def run_simulation(start_date, end_date, episode_type, episode_num):
     while current_step < steps_per_chunk:
         if state is None:
             print("State is None")
-        #state = normalize_observation(state,obs_mean,obs_std_dev)
+        state = normalize_observation(state,obs_mean,obs_std_dev)
         if episode_type == "Training":
             action = agent.select_action(state)  # Epsilon-greedy action for training
         else:
@@ -120,7 +118,7 @@ def run_simulation(start_date, end_date, episode_type, episode_num):
             next_state = None
         else:
             next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
-            #next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
+            next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
         # Only train and store transitions if it's a training episode
         if episode_type == "Training":
             # Store transition in replay buffer

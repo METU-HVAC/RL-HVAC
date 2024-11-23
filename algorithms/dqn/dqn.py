@@ -24,7 +24,7 @@ device = torch.device(
     
 class DQNAgent:
     
-    def __init__(self, n_observations, n_actions, config=DQN_CONFIG):
+    def __init__(self, n_observations, n_actions, total_training_steps,config=DQN_CONFIG):
         self.policy_net = DQN(n_observations, n_actions).to(device)
         self.target_net = DQN(n_observations, n_actions).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -41,13 +41,18 @@ class DQNAgent:
         self.eps_end = config["eps_end"]
         self.eps_decay = config["eps_decay"]
         self.tau = config["tau"]
+        self.total_training_steps = total_training_steps
         self.eps_threshold = 0
     def store_transition(self,state,action,next_state,reward):
         self.memory.push(state,action,next_state,reward)
     def select_action(self, state):
         sample = random.random()
+        # self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
+        #     math.exp(-1. * self.steps_done / self.eps_decay)
+        # self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
+        #     (1 - self.steps_done / self.total_training_steps)
         self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-            math.exp(-1. * self.steps_done / self.eps_decay)
+            math.exp(-1. * (self.steps_done / self.total_training_steps) * self.eps_decay)
         self.steps_done += 1
         if sample > self.eps_threshold:
             with torch.no_grad():

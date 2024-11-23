@@ -3,8 +3,8 @@ DQN_CONFIG = {
     "gamma": 0.99,
     "eps_start": 0.9,
     "eps_end": 0.05,
-    "eps_decay": 1000,
+    "eps_decay": 5,
     "tau": 0.005,
-    "lr": 1e-4,
-    "memory_capacity": 10000
+    "lr": 1e-3,
+    "memory_capacity": 100000
 }

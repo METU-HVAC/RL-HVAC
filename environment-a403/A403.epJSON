@@ -655,6 +655,12 @@
             "zone_or_zonelist_or_space_or_spacelist_name": "189.1-2009 - Office - OpenOffice - CZ1-3"
         }
     },
+    "EnergyManagementSystem:Sensor": {
+        "Energy_Management_System_Sensor_1": {
+            "output_variable_or_output_meter_index_key_name": "TZ-A403",
+            "output_variable_or_output_meter_name": "Zone Air CO2 Concentration"
+        }
+    },
     "Fan:VariableVolume": {
         "Var Spd Fan": {
             "air_inlet_node_name": "Node 9",
@@ -1663,6 +1669,128 @@
         }
     },
     "Output:Table:Monthly": {
+        "Building Energy Performance - Coal": {
+            "digits_after_decimal": 2,
+            "variable_details": [
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heating:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Cooling:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Lighting:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Lighting:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Equipment:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Equipment:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Fans:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Pumps:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Rejection:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Humidification:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Recovery:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Water Systems:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Refrigeration:Coal"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Generators:Coal"
+                }
+            ]
+        },
+        "Building Energy Performance - Diesel": {
+            "digits_after_decimal": 2,
+            "variable_details": [
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heating:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Cooling:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Lighting:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Lighting:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Equipment:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Equipment:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Fans:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Pumps:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Rejection:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Humidification:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Recovery:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Water Systems:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Refrigeration:Diesel"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Generators:Diesel"
+                }
+            ]
+        },
         "Building Energy Performance - District Cooling": {
             "digits_after_decimal": 2,
             "variable_details": [
@@ -2025,6 +2153,189 @@
                 }
             ]
         },
+        "Building Energy Performance - FuelOilNo1": {
+            "digits_after_decimal": 2,
+            "variable_details": [
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heating:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Cooling:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Lighting:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Lighting:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Equipment:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Equipment:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Fans:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Pumps:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Rejection:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Humidification:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Recovery:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Water Systems:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Refrigeration:FuelOilNo1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Generators:FuelOilNo1"
+                }
+            ]
+        },
+        "Building Energy Performance - FuelOilNo2": {
+            "digits_after_decimal": 2,
+            "variable_details": [
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heating:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Cooling:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Lighting:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Lighting:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Equipment:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Equipment:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Fans:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Pumps:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Rejection:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Humidification:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Recovery:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Water Systems:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Refrigeration:FuelOilNo2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Generators:FuelOilNo2"
+                }
+            ]
+        },
+        "Building Energy Performance - Gasoline": {
+            "digits_after_decimal": 2,
+            "variable_details": [
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heating:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Cooling:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Lighting:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Lighting:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Equipment:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Equipment:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Fans:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Pumps:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Rejection:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Humidification:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Recovery:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Water Systems:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Refrigeration:Gasoline"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Generators:Gasoline"
+                }
+            ]
+        },
         "Building Energy Performance - Natural Gas": {
             "digits_after_decimal": 2,
             "variable_details": [
@@ -2086,6 +2397,189 @@
                     "variable_or_meter_name": "Cogeneration:NaturalGas"
                 }
             ]
+        },
+        "Building Energy Performance - OtherFuel1": {
+            "digits_after_decimal": 2,
+            "variable_details": [
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heating:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Cooling:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Lighting:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Lighting:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Equipment:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Equipment:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Fans:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Pumps:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Rejection:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Humidification:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Recovery:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Water Systems:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Refrigeration:OtherFuel1"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Generators:OtherFuel1"
+                }
+            ]
+        },
+        "Building Energy Performance - OtherFuel2": {
+            "digits_after_decimal": 2,
+            "variable_details": [
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heating:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Cooling:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Lighting:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Lighting:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Equipment:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Equipment:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Fans:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Pumps:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Rejection:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Humidification:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Recovery:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Water Systems:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Refrigeration:OtherFuel2"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Generators:OtherFuel2"
+                }
+            ]
+        },
+        "Building Energy Performance - PropaneGas": {
+            "digits_after_decimal": 2,
+            "variable_details": [
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heating:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Cooling:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Lighting:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Lighting:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Interior Equipment:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Exterior Equipment:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Fans:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Pumps:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Rejection:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Humidification:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Heat Recovery:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Water Systems:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Refrigeration:PropaneGas"
+                },
+                {
+                    "aggregation_type_for_variable_or_meter": "SumOrAverage",
+                    "variable_or_meter_name": "Generators:PropaneGas"
+                }
+            ]
         }
     },
     "Output:Table:SummaryReports": {
@@ -2105,33 +2599,115 @@
         },
         "Output:Variable 2": {
             "key_value": "*",
-            "reporting_frequency": "Hourly",
-            "variable_name": "Zone Air Temperature"
+            "reporting_frequency": "Timestep",
+            "variable_name": "People Occupant Count"
         },
         "Output:Variable 3": {
             "key_value": "*",
-            "reporting_frequency": "Hourly",
-            "variable_name": "Zone Air Relative Humidity"
+            "reporting_frequency": "Timestep",
+            "variable_name": "Cooling Coil Electricity Energy"
         },
         "Output:Variable 4": {
             "key_value": "*",
             "reporting_frequency": "Timestep",
-            "variable_name": "Zone Thermostat Cooling Setpoint Temperature"
+            "variable_name": "Heating Coil Electricity Energy"
         },
         "Output:Variable 5": {
             "key_value": "*",
             "reporting_frequency": "Timestep",
-            "variable_name": "Zone Thermostat Heating Setpoint Temperature"
+            "variable_name": "Fan Electricity Energy"
         },
         "Output:Variable 6": {
-            "key_value": "*",
             "reporting_frequency": "Timestep",
-            "variable_name": "Fan Air Mass Flow Rate"
+            "variable_name": "FangerPMV"
         },
         "Output:Variable 7": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "FangerPPD"
+        },
+        "Output:Variable 8": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "Time Not Comfortable Summer Clothes"
+        },
+        "Output:Variable 9": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "Time Not Comfortable Winter Clothes"
+        },
+        "Output:Variable 10": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "Time Not Comfortable Summer Or Winter Clothes"
+        },
+        "Output:Variable 11": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermal Comfort Fanger Model PMV"
+        },
+        "Output:Variable 12": {
             "key_value": "*",
             "reporting_frequency": "Timestep",
-            "variable_name": "System Node Mass Flow Rate"
+            "variable_name": "Zone Air Temperature"
+        },
+        "Output:Variable 13": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermal Comfort Fanger Model PPD"
+        },
+        "Output:Variable 14": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermal Comfort ASHRAE 55 Simple Model Summer Clothes Not Comfortable Time"
+        },
+        "Output:Variable 15": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermal Comfort ASHRAE 55 Simple Model Winter Clothes Not Comfortable Time"
+        },
+        "Output:Variable 16": {
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermal Comfort ASHRAE 55 Simple Model Summer or Winter Clothes Not Comfortable Time"
+        },
+        "Output:Variable 17": {
+            "key_value": "*",
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Air Relative Humidity"
+        },
+        "Output:Variable 18": {
+            "key_value": "*",
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermostat Cooling Setpoint Temperature"
+        },
+        "Output:Variable 19": {
+            "key_value": "*",
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermostat Heating Setpoint Temperature"
+        },
+        "Output:Variable 20": {
+            "key_value": "*",
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermal Comfort Fanger Model PMV"
+        },
+        "Output:Variable 21": {
+            "key_value": "*",
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Air Humidity Ratio"
+        },
+        "Output:Variable 22": {
+            "key_value": "*",
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Air CO2 Concentration"
+        },
+        "Output:Variable 23": {
+            "key_value": "*",
+            "reporting_frequency": "Timestep",
+            "variable_name": "Zone Thermal Comfort Fanger Model PPD"
+        },
+        "Output:Variable 24": {
+            "reporting_frequency": "Monthly",
+            "variable_name": "Site Outdoor Air Drybulb Temperature"
+        },
+        "Output:Variable 25": {
+            "reporting_frequency": "Hourly",
+            "variable_name": "Zone Air Temperature"
+        },
+        "Output:Variable 26": {
+            "reporting_frequency": "Hourly",
+            "variable_name": "Zone Air Relative Humidity"
         }
     },
     "Output:VariableDictionary": {
@@ -2154,10 +2730,18 @@
     "People": {
         "189.1-2009 - Office - OpenOffice - CZ1-3 People": {
             "activity_level_schedule_name": "Office Activity",
+            "air_velocity_schedule_name": "Air Velocity Schedule",
+            "clothing_insulation_schedule_name": "Clothing Schedule",
+            "enable_ashrae_55_comfort_warnings": "No",
             "fraction_radiant": 0.3,
+            "mean_radiant_temperature_calculation_type": "EnclosureAveraged",
             "number_of_people_calculation_method": "People/Area",
             "number_of_people_schedule_name": "Office Work Occ",
             "people_per_floor_area": 0.056510529687726,
+            "thermal_comfort_model_1_type": "Fanger",
+            "thermal_comfort_model_2_type": "Pierce",
+            "thermal_comfort_model_3_type": "KSU",
+            "work_efficiency_schedule_name": "Work Efficiency Schedule",
             "zone_or_zonelist_or_space_or_spacelist_name": "189.1-2009 - Office - OpenOffice - CZ1-3"
         }
     },
@@ -2215,6 +2799,86 @@
         }
     },
     "Schedule:Day:Interval": {
+        "AVM Hybrid Ventilation Control Mode Schedule DefaultDay": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 1
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Integer 2"
+        },
+        "AVM Hybrid Ventilation Min OA Schedule defaultDay": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 0
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Temperature"
+        },
+        "Air Velocity Schedule Default": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 0.2
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Velocity"
+        },
+        "Chilled Water Temperature Default": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 6.7
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Temperature"
+        },
+        "Chilled Water Temperature Summer Design Day": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 6.7
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Temperature"
+        },
+        "Chilled Water Temperature Winter Design Day": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 6.7
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Temperature"
+        },
+        "Clothing Schedule Default Winter Clothes": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 1
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Any Number"
+        },
+        "Clothing Schedule Summer Clothes": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 0.5
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Any Number"
+        },
         "Min Max Temp w Deadband Max Day": {
             "data": [
                 {
@@ -2652,8 +3316,16 @@
         "Schedule Day 1": {
             "data": [
                 {
-                    "time": "24:00",
+                    "time": "08:00",
+                    "value_until_time": 10
+                },
+                {
+                    "time": "12:00",
                     "value_until_time": 21
+                },
+                {
+                    "time": "24:00",
+                    "value_until_time": 10
                 }
             ],
             "interpolate_to_timestep": "No",
@@ -2662,8 +3334,16 @@
         "Schedule Day 2": {
             "data": [
                 {
+                    "time": "08:00",
+                    "value_until_time": 30
+                },
+                {
+                    "time": "12:00",
+                    "value_until_time": 23
+                },
+                {
                     "time": "24:00",
-                    "value_until_time": 23.5116005795872
+                    "value_until_time": 30
                 }
             ],
             "interpolate_to_timestep": "No",
@@ -2672,8 +3352,54 @@
         "Schedule Day 3": {
             "data": [
                 {
+                    "time": "08:00",
+                    "value_until_time": 0
+                },
+                {
+                    "time": "12:00",
+                    "value_until_time": 0.3
+                },
+                {
                     "time": "24:00",
+                    "value_until_time": 0
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Fractional"
+        },
+        "Schedule Day 4": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 400
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Integer"
+        },
+        "Schedule Day 5": {
+            "data": [
+                {
+                    "time": "08:00",
+                    "value_until_time": 0
+                },
+                {
+                    "time": "12:00",
                     "value_until_time": 1
+                },
+                {
+                    "time": "24:00",
+                    "value_until_time": 2.31481481481481e-05
+                }
+            ],
+            "interpolate_to_timestep": "No",
+            "schedule_type_limits_name": "Fractional"
+        },
+        "Work Efficiency Schedule Default": {
+            "data": [
+                {
+                    "time": "24:00",
+                    "value_until_time": 0
                 }
             ],
             "interpolate_to_timestep": "No",
@@ -2681,6 +3407,48 @@
         }
     },
     "Schedule:Week:Daily": {
+        "AVM Hybrid Ventilation Control Mode Schedule Week Rule - Jan1-Dec31": {
+            "customday1_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "customday2_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "friday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "holiday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "monday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "saturday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "summerdesignday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "sunday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "thursday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "tuesday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "wednesday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay",
+            "winterdesignday_schedule_day_name": "AVM Hybrid Ventilation Control Mode Schedule DefaultDay"
+        },
+        "AVM Hybrid Ventilation Min OA Schedule Week Rule - Jan1-Dec31": {
+            "customday1_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "customday2_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "friday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "holiday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "monday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "saturday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "summerdesignday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "sunday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "thursday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "tuesday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "wednesday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay",
+            "winterdesignday_schedule_day_name": "AVM Hybrid Ventilation Min OA Schedule defaultDay"
+        },
+        "Air Velocity Schedule Week Rule - Jan1-Dec31": {
+            "customday1_schedule_day_name": "Air Velocity Schedule Default",
+            "customday2_schedule_day_name": "Air Velocity Schedule Default",
+            "friday_schedule_day_name": "Air Velocity Schedule Default",
+            "holiday_schedule_day_name": "Air Velocity Schedule Default",
+            "monday_schedule_day_name": "Air Velocity Schedule Default",
+            "saturday_schedule_day_name": "Air Velocity Schedule Default",
+            "summerdesignday_schedule_day_name": "Air Velocity Schedule Default",
+            "sunday_schedule_day_name": "Air Velocity Schedule Default",
+            "thursday_schedule_day_name": "Air Velocity Schedule Default",
+            "tuesday_schedule_day_name": "Air Velocity Schedule Default",
+            "wednesday_schedule_day_name": "Air Velocity Schedule Default",
+            "winterdesignday_schedule_day_name": "Air Velocity Schedule Default"
+        },
         "CLG_SCHD Week Rule - Jan1-Dec31": {
             "customday1_schedule_day_name": "Schedule Day 2",
             "customday2_schedule_day_name": "Schedule Day 2",
@@ -2694,6 +3462,48 @@
             "tuesday_schedule_day_name": "Schedule Day 2",
             "wednesday_schedule_day_name": "Schedule Day 2",
             "winterdesignday_schedule_day_name": "Schedule Day 2"
+        },
+        "CO2_Concentration Schedule Week Rule - Jan1-Dec31": {
+            "customday1_schedule_day_name": "Schedule Day 4",
+            "customday2_schedule_day_name": "Schedule Day 4",
+            "friday_schedule_day_name": "Schedule Day 4",
+            "holiday_schedule_day_name": "Schedule Day 4",
+            "monday_schedule_day_name": "Schedule Day 4",
+            "saturday_schedule_day_name": "Schedule Day 4",
+            "summerdesignday_schedule_day_name": "Schedule Day 4",
+            "sunday_schedule_day_name": "Schedule Day 4",
+            "thursday_schedule_day_name": "Schedule Day 4",
+            "tuesday_schedule_day_name": "Schedule Day 4",
+            "wednesday_schedule_day_name": "Schedule Day 4",
+            "winterdesignday_schedule_day_name": "Schedule Day 4"
+        },
+        "Chilled Water Temperature Week Rule - Jan1-Dec31": {
+            "customday1_schedule_day_name": "Chilled Water Temperature Default",
+            "customday2_schedule_day_name": "Chilled Water Temperature Default",
+            "friday_schedule_day_name": "Chilled Water Temperature Default",
+            "holiday_schedule_day_name": "Chilled Water Temperature Default",
+            "monday_schedule_day_name": "Chilled Water Temperature Default",
+            "saturday_schedule_day_name": "Chilled Water Temperature Default",
+            "summerdesignday_schedule_day_name": "Chilled Water Temperature Summer Design Day",
+            "sunday_schedule_day_name": "Chilled Water Temperature Default",
+            "thursday_schedule_day_name": "Chilled Water Temperature Default",
+            "tuesday_schedule_day_name": "Chilled Water Temperature Default",
+            "wednesday_schedule_day_name": "Chilled Water Temperature Default",
+            "winterdesignday_schedule_day_name": "Chilled Water Temperature Winter Design Day"
+        },
+        "Clothing Schedule Week Rule - Jan1-Dec31": {
+            "customday1_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "customday2_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "friday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "holiday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "monday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "saturday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "summerdesignday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "sunday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "thursday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "tuesday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "wednesday_schedule_day_name": "Clothing Schedule Default Winter Clothes",
+            "winterdesignday_schedule_day_name": "Clothing Schedule Default Winter Clothes"
         },
         "FAN_SPD_SCHD Week Rule - Jan1-Dec31": {
             "customday1_schedule_day_name": "Schedule Day 3",
@@ -2820,9 +3630,73 @@
             "tuesday_schedule_day_name": "Office Bldg Occ Default Schedule",
             "wednesday_schedule_day_name": "Office Bldg Occ Default Schedule",
             "winterdesignday_schedule_day_name": "Office Bldg Occ Winter Design Day"
+        },
+        "WINDOW_FAN_SCHD Week Rule - Jan1-Dec31": {
+            "customday1_schedule_day_name": "Schedule Day 5",
+            "customday2_schedule_day_name": "Schedule Day 5",
+            "friday_schedule_day_name": "Schedule Day 5",
+            "holiday_schedule_day_name": "Schedule Day 5",
+            "monday_schedule_day_name": "Schedule Day 5",
+            "saturday_schedule_day_name": "Schedule Day 5",
+            "summerdesignday_schedule_day_name": "Schedule Day 5",
+            "sunday_schedule_day_name": "Schedule Day 5",
+            "thursday_schedule_day_name": "Schedule Day 5",
+            "tuesday_schedule_day_name": "Schedule Day 5",
+            "wednesday_schedule_day_name": "Schedule Day 5",
+            "winterdesignday_schedule_day_name": "Schedule Day 5"
+        },
+        "Work Efficiency Schedule Week Rule - Jan1-Dec31": {
+            "customday1_schedule_day_name": "Work Efficiency Schedule Default",
+            "customday2_schedule_day_name": "Work Efficiency Schedule Default",
+            "friday_schedule_day_name": "Work Efficiency Schedule Default",
+            "holiday_schedule_day_name": "Work Efficiency Schedule Default",
+            "monday_schedule_day_name": "Work Efficiency Schedule Default",
+            "saturday_schedule_day_name": "Work Efficiency Schedule Default",
+            "summerdesignday_schedule_day_name": "Work Efficiency Schedule Default",
+            "sunday_schedule_day_name": "Work Efficiency Schedule Default",
+            "thursday_schedule_day_name": "Work Efficiency Schedule Default",
+            "tuesday_schedule_day_name": "Work Efficiency Schedule Default",
+            "wednesday_schedule_day_name": "Work Efficiency Schedule Default",
+            "winterdesignday_schedule_day_name": "Work Efficiency Schedule Default"
         }
     },
     "Schedule:Year": {
+        "AVM Hybrid Ventilation Control Mode Schedule": {
+            "schedule_type_limits_name": "Integer 2",
+            "schedule_weeks": [
+                {
+                    "end_day": 31,
+                    "end_month": 12,
+                    "schedule_week_name": "AVM Hybrid Ventilation Control Mode Schedule Week Rule - Jan1-Dec31",
+                    "start_day": 1,
+                    "start_month": 1
+                }
+            ]
+        },
+        "AVM Hybrid Ventilation Min OA Schedule": {
+            "schedule_type_limits_name": "Temperature",
+            "schedule_weeks": [
+                {
+                    "end_day": 31,
+                    "end_month": 12,
+                    "schedule_week_name": "AVM Hybrid Ventilation Min OA Schedule Week Rule - Jan1-Dec31",
+                    "start_day": 1,
+                    "start_month": 1
+                }
+            ]
+        },
+        "Air Velocity Schedule": {
+            "schedule_type_limits_name": "Velocity",
+            "schedule_weeks": [
+                {
+                    "end_day": 31,
+                    "end_month": 12,
+                    "schedule_week_name": "Air Velocity Schedule Week Rule - Jan1-Dec31",
+                    "start_day": 1,
+                    "start_month": 1
+                }
+            ]
+        },
         "CLG_SCHD": {
             "schedule_type_limits_name": "Temperature",
             "schedule_weeks": [
@@ -2830,6 +3704,42 @@
                     "end_day": 31,
                     "end_month": 12,
                     "schedule_week_name": "CLG_SCHD Week Rule - Jan1-Dec31",
+                    "start_day": 1,
+                    "start_month": 1
+                }
+            ]
+        },
+        "CO2_Concentration Schedule": {
+            "schedule_type_limits_name": "Integer",
+            "schedule_weeks": [
+                {
+                    "end_day": 31,
+                    "end_month": 12,
+                    "schedule_week_name": "CO2_Concentration Schedule Week Rule - Jan1-Dec31",
+                    "start_day": 1,
+                    "start_month": 1
+                }
+            ]
+        },
+        "Chilled Water Temperature": {
+            "schedule_type_limits_name": "Temperature",
+            "schedule_weeks": [
+                {
+                    "end_day": 31,
+                    "end_month": 12,
+                    "schedule_week_name": "Chilled Water Temperature Week Rule - Jan1-Dec31",
+                    "start_day": 1,
+                    "start_month": 1
+                }
+            ]
+        },
+        "Clothing Schedule": {
+            "schedule_type_limits_name": "Any Number",
+            "schedule_weeks": [
+                {
+                    "end_day": 31,
+                    "end_month": 12,
+                    "schedule_week_name": "Clothing Schedule Week Rule - Jan1-Dec31",
                     "start_day": 1,
                     "start_month": 1
                 }
@@ -2942,6 +3852,30 @@
                     "start_month": 1
                 }
             ]
+        },
+        "WINDOW_FAN_SCHD": {
+            "schedule_type_limits_name": "Fractional",
+            "schedule_weeks": [
+                {
+                    "end_day": 31,
+                    "end_month": 12,
+                    "schedule_week_name": "WINDOW_FAN_SCHD Week Rule - Jan1-Dec31",
+                    "start_day": 1,
+                    "start_month": 1
+                }
+            ]
+        },
+        "Work Efficiency Schedule": {
+            "schedule_type_limits_name": "Fractional",
+            "schedule_weeks": [
+                {
+                    "end_day": 31,
+                    "end_month": 12,
+                    "schedule_week_name": "Work Efficiency Schedule Week Rule - Jan1-Dec31",
+                    "start_day": 1,
+                    "start_month": 1
+                }
+            ]
         }
     },
     "ScheduleTypeLimits": {
@@ -3003,6 +3937,11 @@
             "numeric_type": "Discrete"
         },
         "Integer 1": {
+            "lower_limit_value": 0,
+            "numeric_type": "Discrete",
+            "upper_limit_value": 4
+        },
+        "Integer 2": {
             "lower_limit_value": 0,
             "numeric_type": "Discrete",
             "upper_limit_value": 4
@@ -3138,11 +4077,11 @@
         }
     },
     "Site:Location": {
-        "Chicago Ohare Intl Ap": {
-            "elevation": 201,
-            "latitude": 41.98,
-            "longitude": -87.92,
-            "time_zone": -6
+        "San Francisco Intl Ap": {
+            "elevation": 2,
+            "latitude": 37.62,
+            "longitude": -122.4,
+            "time_zone": -8
         }
     },
     "Sizing:Parameters": {
@@ -3587,7 +4526,8 @@
     },
     "ZoneAirContaminantBalance": {
         "ZoneAirContaminantBalance 1": {
-            "carbon_dioxide_concentration": "No"
+            "carbon_dioxide_concentration": "Yes",
+            "outdoor_carbon_dioxide_schedule_name": "CO2_Concentration Schedule"
         }
     },
     "ZoneAirHeatBalanceAlgorithm": {
@@ -3644,6 +4584,30 @@
             "flow_rate_per_exterior_surface_area": 0.00030226,
             "schedule_name": "Office Infil Quarter On",
             "zone_or_zonelist_or_space_or_spacelist_name": "189.1-2009 - Office - OpenOffice - CZ1-3"
+        }
+    },
+    "ZoneVentilation:DesignFlowRate": {
+        "Natural Ventilation": {
+            "air_changes_per_hour": 0,
+            "constant_term_coefficient": 1,
+            "delta_temperature": -100,
+            "design_flow_rate": 0.15,
+            "design_flow_rate_calculation_method": "Flow/Zone",
+            "fan_pressure_rise": 300,
+            "fan_total_efficiency": 1,
+            "flow_rate_per_floor_area": 0,
+            "flow_rate_per_person": 0,
+            "maximum_indoor_temperature": 100,
+            "maximum_outdoor_temperature": 100,
+            "maximum_wind_speed": 40,
+            "minimum_indoor_temperature": 18,
+            "minimum_outdoor_temperature": -100,
+            "schedule_name": "WINDOW_FAN_SCHD",
+            "temperature_term_coefficient": 0,
+            "velocity_squared_term_coefficient": 0,
+            "velocity_term_coefficient": 0,
+            "ventilation_type": "Intake",
+            "zone_or_zonelist_or_space_or_spacelist_name": "TZ-A403"
         }
     }
 }
