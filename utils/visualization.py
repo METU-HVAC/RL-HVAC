@@ -1,9 +1,79 @@
 import os
 import matplotlib.pyplot as plt
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def plot_csv_data(csv_path):
+    # Load the data from the CSV file
+    df = pd.read_csv(csv_path)
+    
+    #df = df.iloc[600:900]
+    # Create subplots
+    fig, axs = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
+
+    # Plot outdoor and indoor temperatures
+    axs[0].plot(df['Time'], df['Outdoor_Temperature'], label='Outdoor Temperature', color='blue')
+    axs[0].plot(df['Time'], df['Air_Temperature'], label='Indoor Air Temperature', color='red')
+    axs[0].set_ylabel('Temperature (°C)')
+    axs[0].set_title('Outdoor and Indoor Air Temperature vs Time')
+    axs[0].legend()
+
+    # Plot power consumption
+    axs[1].plot(df['Time'], df['Power_Consumption'], label='Power Consumption', color='green')
+    axs[1].set_ylabel('Power Consumption (W)')
+    axs[1].set_title('Power Consumption vs Time')
+    axs[1].legend()
+
+    # Plot temperature violation
+    axs[2].plot(df['Time'], df['Temperature_Violation'], label='Temperature Violation', color='orange')
+    axs[2].set_ylabel('Temperature Violation')
+    axs[2].set_xlabel('Time')
+    axs[2].set_title('Temperature Violation vs Time')
+    axs[2].legend()
+
+    # Adjust the layout for better spacing
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+    
+    plt.close()  # Close the plot
+    ## Close the plot Then plot three figures, co2 levels, occupancy and power consumption
+    # Create subplots
+    fig, axs = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
+
+    # Plot Co2 Levels
+    axs[0].plot(df['Time'], df['CO2_Level'], label='CO2 Levels', color='blue')
+    axs[0].set_ylabel('CO2 Level')
+    axs[0].set_title('CO2 Levels vs Time')
+    axs[0].legend()
+
+    # Plot power consumption
+    axs[1].plot(df['Time'], df['Power_Consumption'], label='Power Consumption', color='green')
+    axs[1].set_ylabel('Power Consumption (W)')
+    axs[1].set_title('Power Consumption vs Time')
+    axs[1].legend()
+
+    # Plot people occupants
+    axs[2].plot(df['Time'], df['People_Occupants'], label='People Occupants', color='orange')
+    axs[2].set_ylabel('People Occupant')
+    axs[2].set_xlabel('Time')
+    axs[2].set_title('People Occupant vs Time')
+    axs[2].legend()
+    # Adjust the layout for better spacing
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+    
+    plt.close()  # Close the plot
+    
+    
 
 def plot_and_save(
     outdoor_temps, htg_setpoints, clg_setpoints, fan_speeds, 
-    air_temps, air_humidities, time_labels, episode_type, 
+    air_temps, air_humidities, time_labels,total_temperature_violation,power_consumptions,
+    people_occupants,co2_levels,episode_type, 
     episode_num, plots_dir
 ):
     """
@@ -70,3 +140,7 @@ def plot_and_save(
     plt.savefig(fan_speed_plot_path)
     plt.close()
     #print(f"Saved {episode_type} fan speed plot for Episode {episode_num} at {fan_speed_plot_path}")
+
+if __name__ == '__main__':
+    csv_file_path = '/Users/hekimoglu/workspace/RL-HVAC/results/plots/dqn/experiment_2024-12-15_14-26-15/dqn_data.csv'  # Replace with the actual path to your CSV
+    plot_csv_data(csv_file_path)

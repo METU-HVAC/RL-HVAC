@@ -9,7 +9,110 @@ from sinergym.utils.rewards import LinearReward
 from typing import Any, Dict, List, Tuple, Union
 from sinergym.utils.constants import LOG_REWARD_LEVEL, YEAR
 from datetime import datetime
+class CO2Reward(LinearReward):
+    def __init__(
+        self,
+        co2_variable: str,
+        energy_variables: List[str],
+        energy_weight: float = 0.3,
+        lambda_energy: float = 1e-4,
+        lambda_co2: float = 1.0,
+        ideal_co2: float = 400,
+    ):
+        """
+        Initialize the CO2Reward class.
 
+        Args:
+            co2_variable (str): Name of the CO2 concentration variable.
+            energy_variables (List[str]): Names of energy-related variables.
+            energy_weight (float): Weight for energy term in the reward.
+            lambda_energy (float): Scaling factor for energy penalty.
+            lambda_co2 (float): Scaling factor for CO2 penalty.
+            ideal_co2 (float): Ideal CO2 level (ppm).
+        """
+        super(LinearReward, self).__init__()
+        self.co2_variable = co2_variable
+        self.energy_names = energy_variables
+        self.W_energy = energy_weight
+        self.lambda_energy = lambda_energy
+        self.lambda_co2 = lambda_co2
+        self.ideal_co2 = ideal_co2
+        self.energy_rew_arr = []
+        self.co2_rew_arr = []
+
+    def __call__(self, obs_dict: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
+        """
+        Calculate the reward function.
+
+        Args:
+            obs_dict (Dict[str, Any]): Dict with observation variable name (key) and observation variable value (value).
+
+        Returns:
+            Tuple[float, Dict[str, Any]]: Reward value and dictionary with their individual components.
+        """
+        # Energy penalty
+        energy_consumed, energy_values = self._get_energy_consumed(obs_dict)
+        energy_penalty = self._get_energy_penalty(energy_values)
+
+        # CO2 penalty
+        co2_concentration = obs_dict[self.co2_variable]
+        co2_penalty = self._get_co2_penalty(co2_concentration)
+
+        # Weighted sum of terms
+        reward, energy_term, co2_term = self._get_reward(energy_penalty, co2_penalty)
+
+        reward_terms = {
+            'energy_term': energy_term,
+            'co2_term': co2_term,
+            'reward_weight': self.W_energy,
+            'abs_energy_penalty': energy_penalty,
+            'abs_co2_penalty': co2_penalty,
+            'total_power_demand': energy_consumed,
+            'co2_concentration': co2_concentration
+        }
+        
+        return reward, reward_terms
+
+    def _get_co2_penalty(self, co2_concentration: float) -> float:
+        """
+        Calculate the penalty based on CO2 concentration.
+
+        Args:
+            co2_concentration (float): CO2 concentration in ppm.
+
+        Returns:
+            float: Negative absolute CO2 penalty.
+        """
+        
+        # Calculate the absolute difference between desired and observed CO2 levels
+        diff = np.abs(self.ideal_co2 - co2_concentration)
+        diff_sq = diff**2
+        scaling_factor = 100000
+        co2_penalty  = -(1 - np.exp(-diff_sq/scaling_factor))
+        
+        return co2_penalty
+
+    def _get_reward(self, energy_penalty: float, co2_penalty: float) -> Tuple[float, float, float]:
+        """
+        Calculate the reward value using penalties for energy and CO2.
+
+        Args:
+            energy_penalty (float): Negative absolute energy penalty value.
+            co2_penalty (float): Negative absolute CO2 penalty value.
+
+        Returns:
+            Tuple[float, float, float]: Total reward, energy term, CO2 term.
+        """
+        energy_term = self.lambda_energy * self.W_energy * energy_penalty
+        co2_term = self.lambda_co2 * (1 - self.W_energy) * co2_penalty
+        reward = energy_term + co2_term
+        self.energy_rew_arr.append(energy_term)
+        self.co2_rew_arr.append(co2_term)
+        print(np.mean(self.energy_rew_arr),np.mean(self.co2_rew_arr))
+        if len(self.energy_rew_arr)>10000:
+            self.energy_rew_arr.pop(0)
+            self.co2_rew_arr.pop(0)
+        return reward, energy_term, co2_term
 class MyCustomReward(LinearReward):
     def __init__(
         self,

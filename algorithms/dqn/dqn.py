@@ -12,15 +12,6 @@ device = torch.device(
     "mps" if torch.backends.mps.is_available() else
     "cpu"
 )
-
-
-
-
-
-
-
-     
-
     
 class DQNAgent:
     
@@ -53,6 +44,7 @@ class DQNAgent:
         #     (1 - self.steps_done / self.total_training_steps)
         self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
             math.exp(-1. * (self.steps_done / self.total_training_steps) * self.eps_decay)
+        #self.eps_threshold = max(self.eps_end, self.eps_start - (self.eps_start - self.eps_end) * (self.steps_done / self.total_training_steps))
         self.steps_done += 1
         if sample > self.eps_threshold:
             with torch.no_grad():
@@ -97,3 +89,5 @@ class DQNAgent:
         for key in policy_net_state_dict:
             target_net_state_dict[key] = policy_net_state_dict[key] * self.tau + target_net_state_dict[key] * (1 - self.tau)
         self.target_net.load_state_dict(target_net_state_dict)
+        
+        return loss.item()
