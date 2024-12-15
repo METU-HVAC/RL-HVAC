@@ -1,0 +1,18 @@
+{
+    "name": "EnergyPlus Dev Container",
+    "build": {
+      "dockerfile": "Dockerfile",
+      "context": "."
+    },
+    "settings": {},
+    "extensions": [
+      "ms-python.python",
+      "ms-azuretools.vscode-docker"
+    ],
+    "mounts": [
+      "source=${localWorkspaceFolder},target=/app,type=bind",
+      "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
+    "remoteUser": "root"
+  }
+  

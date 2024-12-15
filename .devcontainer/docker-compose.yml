@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  energyplus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONPATH=/opt/EnergyPlus/Python:$PYTHONPATH
+    stdin_open: true
+    tty: true
