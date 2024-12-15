@@ -1,0 +1,18 @@
+
+services:
+  energyplus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONPATH=/opt/EnergyPlus/Python:$PYTHONPATH
+      - NVIDIA_VISIBLE_DEVICES=all  # Makes all GPUs visible to the container
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility  # Optional: specify capabilities you need (e.g., compute)
+    stdin_open: true
+    tty: true
+    runtime: nvidia  # Use NVIDIA runtime
+    
+      
