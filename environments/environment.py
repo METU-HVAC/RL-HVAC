@@ -1,6 +1,6 @@
 import gymnasium as gym
 from datetime import datetime, timedelta
-
+from sinergym.utils.wrappers import DatetimeWrapper
 
 REWARD_CONFIG = {
     'temperature_variables': ['air_temperature'],
@@ -50,4 +50,5 @@ def create_environment(start_date, end_date, reward_fn,env_name='Eplus-A403-hot-
                    reward=reward_fn,
                    reward_kwargs=reward_kwargs,
                    config_params=extra_params)
+    env = DatetimeWrapper(env)
     return env

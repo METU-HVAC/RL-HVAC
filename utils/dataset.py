@@ -39,9 +39,13 @@ def split_chunks(chunks, train_ratio=0.7, val_ratio=0.1, seed=None):
 
     train_size = int(train_ratio * len(chunks))
     val_size = int(val_ratio * len(chunks))
+    test_size = len(chunks) - train_size - val_size
 
     train_chunks = chunks[:train_size]
     val_chunks = chunks[train_size:train_size + val_size]
-    test_chunks = chunks[train_size + val_size:]
+    if test_size > 0:
+        test_chunks = chunks[train_size + val_size:]
+    else:
+        test_chunks = []
 
     return train_chunks, val_chunks, test_chunks

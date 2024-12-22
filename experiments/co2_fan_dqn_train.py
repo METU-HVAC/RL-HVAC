@@ -11,7 +11,7 @@ from algorithms.rbc.rbc import *
 from environments.reward import *
 from environments.environment import CO2_REWARD_CONFIG
 import torch
-from sinergym.utils.wrappers import NormalizeObservation
+from sinergym.utils.wrappers import DatetimeWrapper
 from common.utils import *
 from environments.environment import create_environment
 from utils.dataset import generate_chunks, split_chunks
@@ -22,7 +22,7 @@ import pandas as pd
 
 ENV_NAME = "A403"
 ALGORITHM_NAME = "CO2_ON_OFF"
-NUM_EPISODES = 10
+NUM_EPISODES = 20
 
 def create_experiment_name(env_name, episodes,algorithm_name):
     experiment_date = datetime.today().strftime('%Y-%m-%d_%H:%M')
@@ -38,6 +38,35 @@ def save_run_metrics(save_dir,avg_Train_reward, avg_Train_power, avg_total_co2_c
         f.write(f"Train Average Total CO2 Concentration = {avg_total_co2_concentration}\n")
         f.write(f"Train Average Occupancy CO2 Concentration = {avg_occupnacy_co2_concentration}\n")
 
+def calculate_time_label(month_sin, month_cos, hour_sin, hour_cos, current_step, timesteps_per_hour):
+    """
+    Calculate the human-readable time label from sinusoidal time features and step information.
+
+    Args:
+        month_sin (float): Sine of the month.
+        month_cos (float): Cosine of the month.
+        hour_sin (float): Sine of the hour.
+        hour_cos (float): Cosine of the hour.
+        is_weekend (int): 1 if weekend, 0 otherwise.
+        current_step (int): Current timestep index.
+        timesteps_per_hour (int): Number of timesteps per hour.
+
+    Returns:
+        str: Formatted time label.
+    """
+    # Reconstruct the month (1-12)
+    month_angle = math.atan2(month_sin, month_cos)
+    month = int(((month_angle + 2 * math.pi) % (2 * math.pi)) * (12 / (2 * math.pi)) + 1)
+
+    # Reconstruct the hour (0-23)
+    hour_angle = math.atan2(hour_sin, hour_cos)
+    hour = int(((hour_angle + 2 * math.pi) % (2 * math.pi)) * (24 / (2 * math.pi)))
+
+    # Calculate the minute
+    minute = int((current_step % timesteps_per_hour) * (60 / timesteps_per_hour))
+
+    time_label = f"Month: {month:02}, Hour: {hour:02}:{minute:02}"
+    return time_label
 
 def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
     env = create_environment(start_date, end_date,CO2Reward,reward_kwargs=reward_config)  # Create a new environment for the chunk
@@ -88,23 +117,31 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
                 if loss is not None:
                     loss_list.append(loss)
         state = next_state
-        
-        outdoor_temps.append(data[3])
-        htg_setpoints.append(data[5])
-        clg_setpoints.append(data[6])
-        air_temps.append(data[7])
-        air_humidities.append(data[8])
-        people_occupants.append(data[9])
-        power_consumptions.append(data[10])
-        co2_levels.append(data[13])
+        variables = [
+            'month_sin', 'month_cos', 'is_weekend','hour_sin','hour_cos', 'outdoor_temperature',
+            'outdoor_humidity', 'htg_setpoint', 'clg_setpoint',
+            'air_temperature', 'air_humidity', 'people_occupant',
+            'HVAC_electricity_demand_rate', 'thermal_comfort_ppd',
+            'thermal_comfort_pmv','air_co2','total_electricity_HVAC'
+        ]
+        outdoor_temps.append(data[5])
+        htg_setpoints.append(data[7])
+        clg_setpoints.append(data[8])
+        air_temps.append(data[9])
+        air_humidities.append(data[10])
+        people_occupants.append(data[11])
+        power_consumptions.append(data[12])
+        co2_levels.append(data[15])
         fan_speeds.append(fan_speed)
         
-        total_temperature_violation.append(data[13])
-        # Time label
-        month, day = int(data[0]), int(data[1])
-        hour = int(data[2] + 1)
-        minute = (current_step % timesteps_per_hour) * (60 / timesteps_per_hour)
-        time_labels.append(f"{month:02}-{day:02} {hour:02}:{minute:02}")
+        total_temperature_violation.append(data[15])
+        # # Time label
+        # month, day = int(data[0]), int(data[1])
+        # hour = int(data[2] + 1)
+        # minute = (current_step % timesteps_per_hour) * (60 / timesteps_per_hour)
+        time_label = calculate_time_label(data[0], data[1], data[3], data[4], current_step, timesteps_per_hour)
+        #time_labels.append(f"{month:02}-{day:02} {hour:02}:{minute:02}")
+        time_labels.append(time_label)
         total_reward += reward
         #print(info)
         
@@ -146,10 +183,10 @@ def train(config=None):
 
         remove_previous_run_logs()
                 
-        state_size =  15 # Adjust based on the size of your observation space
+        state_size =  17 # Adjust based on the size of your observation space
         action_size = 6  
         train_interval = 100 # Train every n steps
-        timesteps_per_hour = 12  # 5-minute intervals
+        timesteps_per_hour = 6  # 10-minute intervals
         days_per_chunk = 10
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
@@ -160,7 +197,7 @@ def train(config=None):
         plots_dir = "results/plots/dqn"  # Directory to store plots
         # Observation variables for clarity
         variables = [
-            'month', 'day_of_month', 'hour', 'outdoor_temperature',
+            'month_sin', 'month_cos', 'is_weekend','hour_sin','hour_cos', 'outdoor_temperature',
             'outdoor_humidity', 'htg_setpoint', 'clg_setpoint',
             'air_temperature', 'air_humidity', 'people_occupant',
             'HVAC_electricity_demand_rate', 'thermal_comfort_ppd',
@@ -173,7 +210,7 @@ def train(config=None):
 
         # Generate and split chunks
         chunks = generate_chunks(start_date, days_per_chunk, total_days)
-        train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.3, val_ratio=0.1, seed=seed)
+        train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
 
         num_episodes = NUM_EPISODES  # Total number of episodes (full sweeps through the dataset)  
         total_number_of_training_chunks = len(train_chunks)
@@ -195,8 +232,8 @@ def train(config=None):
         reward_config = {
             'co2_variable': 'air_co2',
             'energy_variables': ['HVAC_electricity_demand_rate'],
-            'energy_weight': config.energy_weight, #0.3
-            'lambda_energy': config.lambda_energy, #1e-2,
+            'energy_weight': config.energy_weight, #0.5
+            'lambda_energy': 1e-2,
             'lambda_co2': 1.0,
             'ideal_co2': 400,
         }
@@ -208,6 +245,7 @@ def train(config=None):
         os.makedirs(experiment_dir, exist_ok=True)
         
         for episode in range(1, num_episodes + 1):
+            print("Epsilon of the model:" ,agent.eps_threshold)
             with tqdm(total=len(train_chunks) + len(val_chunks), 
                     desc=f"Episode {episode}", 
                     ncols=120, 
@@ -267,7 +305,9 @@ def train(config=None):
                 val_total_temp_violation = 0
                 val_total_co2_concentration = []
                 val_total_occupancy_co2_concentration = []
+                test_count = 0
                 for val_chunk in val_chunks:
+                    test_count += 1
                     reward , power_consumption,temp_viol,loss,obs_dict = run_simulation(*val_chunk,
                                                                             "Validation", 
                                                                             steps_per_chunk,
@@ -290,11 +330,7 @@ def train(config=None):
                         val_total_co2_concentration.append(co2_concentration)
                         if obs_dict['people_occupants'][i] != 0:
                             val_total_occupancy_co2_concentration.append(co2_concentration)
-                
-                    
-                    
-                    #Decay epsilon every total/100 steps
-                    
+
                 avg_val_reward = (val_total_reward / len(val_chunks)).item()
                 avg_val_power = (val_total_power / len(val_chunks))
                 avg_val_temp_violation = (val_total_temp_violation / len(val_chunks))
@@ -350,23 +386,18 @@ sweep_config = {
     }
 metric = {
     'name': 'avg_occupancy_co2_train',
-    'goal': 'maximize'   
+    'goal': 'minimize'   
     }
 parameters_dict = ({
     'learning_rate': {
         'distribution': 'uniform',
-        'min': 0.00001,
-        'max': 0.001
-      },
-    'lambda_energy': {
-        'distribution': 'uniform',
-        'min': 0.001,
-        'max': 0.100
+        'min': 1e-5,
+        'max': 1e-3
       },
     'energy_weight': {
         'distribution': 'uniform',
-        'min': 0.2,
-        'max': 0.7
+        'min': 0.1,
+        'max': 0.9
       }
     })
 sweep_config['parameters'] = parameters_dict
@@ -374,4 +405,4 @@ sweep_config['metric'] = metric
 
 
 sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=10)
+wandb.agent(sweep_id, train, count=20)

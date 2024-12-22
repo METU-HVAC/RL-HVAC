@@ -39,6 +39,9 @@ class CO2Reward(LinearReward):
         self.ideal_co2 = ideal_co2
         self.energy_rew_arr = []
         self.co2_rew_arr = []
+        self.daily_timestep_count = 0
+        self.timesteps_per_day = 288
+
 
     def __call__(self, obs_dict: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
         """
@@ -103,15 +106,32 @@ class CO2Reward(LinearReward):
         Returns:
             Tuple[float, float, float]: Total reward, energy term, CO2 term.
         """
+        self.lambda_energy  = 1e-2
+        self.W_energy = 0.9
+        
         energy_term = self.lambda_energy * self.W_energy * energy_penalty
         co2_term = self.lambda_co2 * (1 - self.W_energy) * co2_penalty
         reward = energy_term + co2_term
         self.energy_rew_arr.append(energy_term)
         self.co2_rew_arr.append(co2_term)
-        #print(np.mean(self.energy_rew_arr),np.mean(self.co2_rew_arr))
-        if len(self.energy_rew_arr)>10000:
-            self.energy_rew_arr.pop(0)
-            self.co2_rew_arr.pop(0)
+
+
+        # Increment daily timestep count
+        self.daily_timestep_count += 1
+
+        # Log and reset at the end of the day
+        if self.daily_timestep_count == self.timesteps_per_day*9:
+            avg_energy_reward = sum(self.energy_rew_arr) / len(self.energy_rew_arr)
+            avg_co2_reward = sum(self.co2_rew_arr) / len(self.co2_rew_arr)
+            # print(f"Lambdas: Energy: {self.lambda_energy}, CO₂: {self.lambda_co2}")
+            # print(f"Energy Weight: {self.W_energy}")
+            # print(f"Average Energy Reward for the Day: {avg_energy_reward}")
+            # print(f"Average CO₂ Reward for the Day: {avg_co2_reward}")
+
+            self.energy_rew_arr.clear()
+            self.co2_rew_arr.clear()
+            self.daily_timestep_count = 0
+        
         return reward, energy_term, co2_term
 class MyCustomReward(LinearReward):
     def __init__(
