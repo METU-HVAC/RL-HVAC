@@ -17,6 +17,7 @@ from environments.environment import create_environment
 from utils.dataset import generate_chunks, split_chunks
 from utils.visualization import plot_and_save, plot_csv_data
 from tqdm import tqdm
+import wandb
 
 
 # Configuration
@@ -265,3 +266,52 @@ df = pd.DataFrame({
 # Save DataFrame to CSV
 file_path = os.path.join(experiment_dir, "onoff_data.csv")
 df.to_csv(file_path, index=False)
+
+def create_experiment_name(env_name, episodes,algorithm_name):
+
+    experiment_date = datetime.today().strftime('%Y-%m-%d_%H:%M')
+    experiment_name = algorithm_name+'-' + env_name + \
+        '-episodes-' + str(episodes)
+    experiment_name += '_' + experiment_date
+
+    return experiment_name
+
+ENV_NAME = "A403"
+ALGORITHM_NAME = "CO2_ON_OFF"
+name= create_experiment_name(env_name=ENV_NAME, episodes=num_episodes,algorithm_name=ALGORITHM_NAME)
+sweep_config = {
+    'method': 'random' ,
+    'name' : name
+    }
+metric = {
+    'name': 'avg_power',
+    'goal': 'minimize'   
+    }
+parameters_dict = ({
+    'actor_learning_rate': {
+        'distribution': 'uniform',
+        'min': 0.0001,
+        'max': 0.001
+      },
+    'critic_learning_rate': {
+        'distribution': 'uniform',
+        'min': 0.001,
+        'max': 0.01
+      },
+    'energy_weight': {
+        'distribution': 'uniform',
+        'min': 0.5,
+        'max': 0.9
+      },
+    'K_epochs': {
+        'distribution': 'uniform',
+        'min': 40,
+        'max': 150
+      }
+    })
+sweep_config['parameters'] = parameters_dict
+sweep_config['metric'] = metric
+
+
+sweep_id = wandb.sweep(sweep_config, project="RL-sinergym-PPO-Discrete",entity="ulasfiliz")
+wandb.agent(sweep_id, train, count=40)

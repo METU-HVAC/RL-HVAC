@@ -108,7 +108,7 @@ class CO2Reward(LinearReward):
         reward = energy_term + co2_term
         self.energy_rew_arr.append(energy_term)
         self.co2_rew_arr.append(co2_term)
-        print(np.mean(self.energy_rew_arr),np.mean(self.co2_rew_arr))
+        #print(np.mean(self.energy_rew_arr),np.mean(self.co2_rew_arr))
         if len(self.energy_rew_arr)>10000:
             self.energy_rew_arr.pop(0)
             self.co2_rew_arr.pop(0)
