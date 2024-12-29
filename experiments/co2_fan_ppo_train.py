@@ -21,8 +21,8 @@ import wandb
 import pandas as pd
 
 ENV_NAME = "A403"
-ALGORITHM_NAME = "CO2_DQN"
-NUM_EPISODES = 10
+ALGORITHM_NAME = "CO2_ON_OFF"
+NUM_EPISODES = 20
 
 def create_experiment_name(env_name, episodes,algorithm_name):
     experiment_date = datetime.today().strftime('%Y-%m-%d_%H:%M')
@@ -186,7 +186,7 @@ def train(config=None):
         state_size =  17 # Adjust based on the size of your observation space
         action_size = 6  
         train_interval = 100 # Train every n steps
-        timesteps_per_hour = 6  # 10-minute intervals
+        timesteps_per_hour = 12  # 10-minute intervals
         days_per_chunk = 10
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
@@ -233,9 +233,9 @@ def train(config=None):
             'co2_variable': 'air_co2',
             'energy_variables': ['HVAC_electricity_demand_rate'],
             'energy_weight': config.energy_weight, #0.5
-            'lambda_energy': 1e-1,
+            'lambda_energy': 1e-2,
             'lambda_co2': 1.0,
-            'ideal_co2': 700,
+            'ideal_co2': 400,
         }
         # Initialize the DQN agent
         agent = DQNAgent(state_size, action_size,total_training_steps,training_config)
@@ -395,7 +395,9 @@ parameters_dict = ({
         'max': 1e-3
       },
     'energy_weight': {
-        'values': [0.10,0.25,0.5,0.75,0.90]
+        'distribution': 'uniform',
+        'min': 0.1,
+        'max': 0.9
       }
     })
 sweep_config['parameters'] = parameters_dict
@@ -403,6 +405,4 @@ sweep_config['metric'] = metric
 
 
 sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=10)
-
-wandb.finish()
+wandb.agent(sweep_id, train, count=20)

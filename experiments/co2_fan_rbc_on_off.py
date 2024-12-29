@@ -8,6 +8,7 @@ import os
 from sinergym.utils.constants import *
 from algorithms.dqn.dqn import *
 from algorithms.rbc.rbc import *
+from algorithms.onoff.on_off_controller import *
 from environments.reward import *
 from environments.environment import CO2_REWARD_CONFIG
 import torch
@@ -21,8 +22,8 @@ import wandb
 import pandas as pd
 
 ENV_NAME = "A403"
-ALGORITHM_NAME = "CO2_DQN"
-NUM_EPISODES = 10
+ALGORITHM_NAME = "CO2_ON_OFF"
+NUM_EPISODES = 1
 
 def create_experiment_name(env_name, episodes,algorithm_name):
     experiment_date = datetime.today().strftime('%Y-%m-%d_%H:%M')
@@ -86,15 +87,11 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
         if state is None:
             print("State is None")
         #state = normalize_observation(state,obs_mean,obs_std_dev)
-       
-       
-        if episode_type == "Training":
-            action = agent.select_action(state)  # Epsilon-greedy action for training
-        else:
-            action = agent.choose_greedy_action(state)  # Greedy action for validation/testing
+        action = agent.select_action(state)  # Epsilon-greedy action for training
+        
 
-        fan_speed = DEFAULT_A403_DISCRETE_FUNCTION(action.item())[3]
-        np_action = np.array([action.item()], dtype=np.float32)  # Adjust dtype to match environment
+        fan_speed = DEFAULT_A403_DISCRETE_FUNCTION(action)[3]
+        np_action = np.array([action], dtype=np.float32)  # Adjust dtype to match environment
         observation, reward, truncated, terminated, info = env.step(np_action)
 
         #observation, reward, truncated, terminated, info = env.step(action.item())
@@ -102,20 +99,15 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
         done = terminated or truncated
         reward = torch.tensor([reward],dtype=torch.float32, device=device)
 
+
+        
+
+
         if done:
             next_state = None
         else:
             next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
             #next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
-        if episode_type == "Training":
-            # Store transition in replay buffer
-            agent.store_transition(state, action, next_state, reward)
-            # Train DQN every few steps if buffer size is sufficient
-            if current_step % train_interval == 0:
-                # Perform one step of the optimization (on the policy network)
-                loss = agent.optimize_model()
-                if loss is not None:
-                    loss_list.append(loss)
         state = next_state
         variables = [
             'month_sin', 'month_cos', 'is_weekend','hour_sin','hour_cos', 'outdoor_temperature',
@@ -194,7 +186,7 @@ def train(config=None):
         start_date = datetime(1997, 1, 1)
         days_per_chunk = 10
         total_days = 365
-        plots_dir = "results/plots/dqn"  # Directory to store plots
+        plots_dir = "results/plots/setpoint"  # Directory to store plots
         # Observation variables for clarity
         variables = [
             'month_sin', 'month_cos', 'is_weekend','hour_sin','hour_cos', 'outdoor_temperature',
@@ -226,26 +218,25 @@ def train(config=None):
             "eps_end": 0.05,
             "eps_decay": 5,
             "tau": 0.005,
-            "lr": config.learning_rate,
+            "lr": 1e-4,
             "memory_capacity": 100000
         }
         reward_config = {
             'co2_variable': 'air_co2',
             'energy_variables': ['HVAC_electricity_demand_rate'],
-            'energy_weight': config.energy_weight, #0.5
+            'energy_weight': 0.5, #0.5
             'lambda_energy': 1e-1,
             'lambda_co2': 1.0,
             'ideal_co2': 700,
         }
-        # Initialize the DQN agent
-        agent = DQNAgent(state_size, action_size,total_training_steps,training_config)
+        # Initialize the SP agent
+        agent = OnOffController(on_action = config.action)
         # Create the main experiment directory (only once)
         experiment_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         experiment_dir = os.path.join(plots_dir, f"experiment_{experiment_timestamp}")
         os.makedirs(experiment_dir, exist_ok=True)
         
         for episode in range(1, num_episodes + 1):
-            print("Epsilon of the model:" ,agent.eps_threshold)
             with tqdm(total=len(train_chunks) + len(val_chunks), 
                     desc=f"Episode {episode}", 
                     ncols=120, 
@@ -295,8 +286,7 @@ def train(config=None):
                 wandb.log({"avg_co2_train":np.mean(train_total_co2_concentration),"avg_occupancy_co2_train":np.mean(train_total_occupancy_co2_concentration)},step=episode)
                 wandb.log({"avg_reward_train":avg_train_reward},step=episode)
                 
-                with open("train_average_reward.txt", "a") as f:
-                    f.write(f"Episode {episode}: Train Average Reward = {avg_train_reward} ,Epsilon = {agent.eps_threshold}\n")
+
                 #plot_and_save(**obs_dict, episode_type="Training", episode_num=episode,plots_dir=experiment_dir)
             
                 # Validation: Full sweep over the shuffled validation dataset
@@ -337,9 +327,7 @@ def train(config=None):
                 wandb.log({"avg_val_power": avg_val_power},step=episode)
                 wandb.log({"avg_co2_val":np.mean(val_total_co2_concentration),"avg_occupancy_co2_val":np.mean(val_total_occupancy_co2_concentration)},step=episode)
                 wandb.log({"avg_reward_val":avg_val_reward},step=episode)
-                
-                with open("val_average_reward.txt", "a") as f:
-                    f.write(f"Episode {episode}: val Average Reward = {avg_val_reward} ,Epsilon = {agent.eps_threshold}\n")
+
                 #plot_and_save(**obs_dict, episode_type="Validation", episode_num=episode,plots_dir=experiment_dir)
                 
                 
@@ -372,7 +360,7 @@ def train(config=None):
 
 
         # Save DataFrame to CSV
-        file_path = os.path.join(experiment_dir, "dqn_data.csv")
+        file_path = os.path.join(experiment_dir, "on_off_data.csv")
         df.to_csv(file_path, index=False)
 
         
@@ -381,7 +369,7 @@ def train(config=None):
 
 name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
 sweep_config = {
-    'method': 'bayes' ,
+    'method': 'grid' ,
     'name' : name
     }
 metric = {
@@ -389,20 +377,16 @@ metric = {
     'goal': 'minimize'   
     }
 parameters_dict = ({
-    'learning_rate': {
-        'distribution': 'uniform',
-        'min': 1e-5,
-        'max': 1e-3
-      },
-    'energy_weight': {
-        'values': [0.10,0.25,0.5,0.75,0.90]
+    'action': {
+        'values': [1,2,3,4]
       }
     })
 sweep_config['parameters'] = parameters_dict
 sweep_config['metric'] = metric
 
-
 sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=10)
+wandb.agent(sweep_id, train, count=4)
+
+#Close the agent
 
 wandb.finish()

@@ -18,7 +18,7 @@ CO2_REWARD_CONFIG = {
     'energy_weight': 0.3,
     'lambda_energy': 1e-2,
     'lambda_co2': 1.0,
-    'ideal_co2': 400,
+    'ideal_co2': 700,
 }
 
 # Helper to create a new environment with given start and end dates

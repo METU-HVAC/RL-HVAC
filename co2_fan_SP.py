@@ -55,7 +55,7 @@ variables = [
 class SetpointController():
     '''
     Setpoint controller for CO2 Fan is a hystreresis controller that turns on the fan on full speed when the CO2 concentration
-    is above 800 ppm and turns off the fan when the CO2 concentration is below 600 ppm.
+    is above 700 ppm and turns off the fan when the CO2 concentration is below 600 ppm.
     '''
     # mapping = {
     #     0: [ 5, 50, 0.0, 0.0],
@@ -74,7 +74,7 @@ class SetpointController():
         Act method for the controller
         '''
         co2 = state[0][-2]
-        if co2 > 800:
+        if co2 > 700:
             self.is_open = True
             return self.on_action
         elif co2 < 600:
