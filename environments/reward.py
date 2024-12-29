@@ -111,8 +111,8 @@ class CO2andTemperatureReward(LinearReward):
             'total_power_demand': energy_consumed,
             'total_temperature_violation': temp_reward,
             'co2_concentration': co2_concentration,
-            'is_co2_violated': co2_concentration > self.co2_threshold,
-            'is_comfort_violated': temp_reward < 0,
+            'is_co2_violated': obs_dict['people_occupant'] > 0 and co2_concentration > self.co2_threshold, 
+            'is_comfort_violated': obs_dict['people_occupant'] > 0 and temp_reward < 0,
             'is_occupied': obs_dict['people_occupant'] > 0
         }
         return reward, reward_terms
@@ -127,7 +127,7 @@ class CO2andTemperatureReward(LinearReward):
             float: Negative absolute CO2 penalty.
         """
         
-        if co2_concentration < self.ideal_co2:
+        if co2_concentration < self.co2_threshold:
             co2_reward = 1.0
         else:
             co2_reward = -20.0
@@ -142,24 +142,23 @@ class CO2andTemperatureReward(LinearReward):
             Tuple[float, List[float]]: Total temperature violation (ºC) and list with temperature violation in each zone.
         """
         # Extract month and reconstruct day if necessary
-        month_sin = obs_dict['month_sin']
-        month_cos = obs_dict['month_cos']
+        
+        month = obs_dict['month']
+        day = obs_dict['day_of_month']
         year = YEAR
-
-        # Reconstruct the month (1-12)
-        month = int((math.atan2(month_sin, month_cos) * 12 / (2 * math.pi)) % 12) + 1
-        print("Month: ",month)
-        # If day_of_month is no longer present, you may need an alternative source for it.
-        day = obs_dict.get('day_of_month', 15)  # Default to mid-month if day isn't available
-
-        current_dt = datetime(year, month, day)
+        current_dt = datetime(int(year), int(month), int(day))
 
         # Periods
-        summer_start_date = datetime(year, self.summer_start[0], self.summer_start[1])
-        summer_final_date = datetime(year, self.summer_final[0], self.summer_final[1])
+        summer_start_date = datetime(
+            int(year),
+            self.summer_start[0],
+            self.summer_start[1])
+        summer_final_date = datetime(
+            int(year),
+            self.summer_final[0],
+            self.summer_final[1])
 
-        # Determine temperature comfort range based on the season
-        if summer_start_date <= current_dt <= summer_final_date:
+        if current_dt >= summer_start_date and current_dt <= summer_final_date:
             temp_range = self.range_comfort_summer
         else:
             temp_range = self.range_comfort_winter

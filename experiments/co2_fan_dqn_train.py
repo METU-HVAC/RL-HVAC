@@ -21,7 +21,7 @@ import wandb
 import pandas as pd
 
 ENV_NAME = "A403"
-ALGORITHM_NAME = "CO2_DQN"
+ALGORITHM_NAME = "CO2_TEMP_DQN"
 NUM_EPISODES = 10
 
 def create_experiment_name(env_name, episodes,algorithm_name):

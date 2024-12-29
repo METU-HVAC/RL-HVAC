@@ -21,13 +21,20 @@ YEAR = 1991
 CWD = os.getcwd()
 
 # Logger values (environment layer, simulator layer and modeling layer)
-LOG_ENV_LEVEL = 'INFO'
-LOG_SIM_LEVEL = 'INFO'
-LOG_MODEL_LEVEL = 'INFO'
-LOG_WRAPPERS_LEVEL = 'INFO'
-LOG_REWARD_LEVEL = 'INFO'
-LOG_COMMON_LEVEL = 'INFO'
-LOG_CALLBACK_LEVEL = 'INFO'
+# LOG_ENV_LEVEL = 'INFO'
+# LOG_SIM_LEVEL = 'INFO'
+# LOG_MODEL_LEVEL = 'INFO'
+# LOG_WRAPPERS_LEVEL = 'INFO'
+# LOG_REWARD_LEVEL = 'INFO'
+# LOG_COMMON_LEVEL = 'INFO'
+# LOG_CALLBACK_LEVEL = 'INFO'
+LOG_ENV_LEVEL = 'WARNING'
+LOG_SIM_LEVEL = 'WARNING'
+LOG_MODEL_LEVEL = 'WARNING'
+LOG_WRAPPERS_LEVEL = 'WARNING'
+LOG_REWARD_LEVEL = 'WARNING'
+LOG_COMMON_LEVEL = 'WARNING'
+LOG_CALLBACK_LEVEL = 'WARNING'
 # LOG_FORMAT = "[%(asctime)s] %(name)s %(levelname)s:%(message)s"
 LOG_FORMAT = "[%(name)s] (%(levelname)s) : %(message)s"
 
@@ -39,21 +46,23 @@ LOG_FORMAT = "[%(name)s] (%(levelname)s) : %(message)s"
 
 
 # Define the ranges for heating, cooling, and fan speeds
-HEATING_RANGE = np.linspace(16, 30, 5)  # 5 points between 16°C and 30 °C
-COOLING_RANGE = np.linspace(18, 30, 5)  # 5 points between 18°C and 30°C
-FAN_SPEEDS = np.linspace(0.0, 1.0, 5)  # Fan speeds: [0.0, 0.25, 0.5, 0.75, 1.0]
+HEATING_RANGE = [16,18,20,21]  
+COOLING_RANGE = [30,28,26,24,23.25]  
+FAN_SPEEDS = [0.5,0.75,1.0]  # Fan speeds: [0.0, 0.25, 0.5, 0.75, 1.0]
+WINDOW_FAN = [0.0,0.50,0.75,1.0] 
 
 # Pre-compute all combinations of [heating, cooling, fan speed]
 ACTION_MAPPING = [
-    [htg, clg, fan]
+    [htg, clg, fan,window_fan]
     for htg in HEATING_RANGE
     for clg in COOLING_RANGE
     if htg < clg  # Ensure heating is lower than cooling
     for fan in FAN_SPEEDS
+    for window_fan in WINDOW_FAN
 ]
 # Add a dummy action for system "off" mode
-DUMMY_ACTION = [5, 50, 0.0]  # Heating at 5°C, Cooling at 50°C, Fan speed 0
-ACTION_MAPPING.append(DUMMY_ACTION)
+OFF_ACTION = [5, 50, 0.0, 0.0]  # Heating at 5°C, Cooling at 50°C, Fan speed 0
+ACTION_MAPPING.append(OFF_ACTION)
 # ---------------------------------------------------------------------------- #
 #              Default Eplus discrete environments action mappings             #
 # ---------------------------------------------------------------------------- #
@@ -65,7 +74,60 @@ def DEFAULT_A403_DISCRETE_FUNCTION(action: int) -> List[float]:
     if isinstance(action, np.ndarray):
         action = int(action.item())  # Handle ndarray input
 
-    return ACTION_MAPPING[action]
+    #mapped_action = np.array(ACTION_MAPPING[action], dtype=np.float32)  # Convert to NumPy array
+    mapping = {
+        0: [18, 21, 0.5, 0.0],
+        1: [18, 21, 0.5, 0.5],
+        2: [18, 21, 0.5, 0.75],
+        3: [18, 21, 0.5, 1.0],
+        4: [18, 21, 0.75, 0.0],
+        5: [18, 21, 0.75, 0.5],
+        6: [18, 21, 0.75, 0.75],
+        7: [18, 21, 0.75, 1.0],
+        8: [18, 21, 1.0, 0.0],
+        9: [18, 21, 1.0, 0.5],
+        10: [18, 21, 1.0, 0.75],
+        11: [18, 21, 1.0, 1.0],
+        12: [21, 24, 0.5, 0.0],
+        13: [21, 24, 0.5, 0.5],
+        14: [21, 24, 0.5, 0.75],
+        15: [21, 24, 0.5, 1.0],
+        16: [21, 24, 0.75, 0.0],
+        17: [21, 24, 0.75, 0.5],
+        18: [21, 24, 0.75, 0.75],
+        19: [21, 24, 0.75, 1.0],
+        20: [21, 24, 1.0, 0.0],
+        21: [21, 24, 1.0, 0.5],
+        22: [21, 24, 1.0, 0.75],
+        23: [21, 24, 1.0, 1.0],
+        24: [24, 27, 0.5, 0.0],
+        25: [24, 27, 0.5, 0.5],
+        26: [24, 27, 0.5, 0.75],
+        27: [24, 27, 0.5, 1.0],
+        28: [24, 27, 0.75, 0.0],
+        29: [24, 27, 0.75, 0.5],
+        30: [24, 27, 0.75, 0.75],
+        31: [24, 27, 0.75, 1.0],
+        32: [24, 27, 1.0, 0.0],
+        33: [24, 27, 1.0, 0.5],
+        34: [24, 27, 1.0, 0.75],
+        35: [24, 27, 1.0, 1.0],
+        36: OFF_ACTION  # Off action
+    }
+
+    
+    #mapped_action = np.array(ACTION_MAPPING[action], dtype=np.float32)  # Convert to NumPy array
+    #Only Fan
+    # mapping = {
+    #     0: [ 5, 50, 0.0, 0.0],
+    #     1: [ 5, 50, 0.0, 0.25],
+    #     2: [ 5, 50, 0.0, 0.5],
+    #     3: [ 5, 50, 0.0, 0.75],
+    #     4: [ 5, 50, 0.0, 1.0],
+    #     5 : OFF_ACTION
+    # }
+    mapped_action = mapping[action]
+    return mapped_action
 def DEFAULT_5ZONE_DISCRETE_FUNCTION(action: int) -> List[float]:
     # SB3 algotihms returns a ndarray instead of a int
     if isinstance(action, np.ndarray):
