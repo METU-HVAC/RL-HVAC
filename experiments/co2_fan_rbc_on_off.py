@@ -351,6 +351,11 @@ def train(config=None):
                         val_total_co2_concentration.append(co2_concentration)
                         if obs_dict['people_occupants'][i] != 0:
                             val_total_occupancy_co2_concentration.append(co2_concentration)
+                            
+                    for i in range(len(obs_dict['co2_levels'])):
+                        co2_levels.append(obs_dict['co2_levels'][i])
+                        inside_temp_levels.append(obs_dict['air_temps'][i])
+                        outside_temp_levels.append(obs_dict['outdoor_temps'][i]) 
 
                     co_violation_percentage += sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
                     temp_violation_percentage += sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100
