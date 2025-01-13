@@ -18,3 +18,5 @@ plots/
 .DS_Store
 
 wandb/
+
+venv/
