@@ -38,14 +38,11 @@ class RBCAgent:
         current_hour = int(hour)
         
         if self.start_hour <= current_hour < self.end_hour:
-            # During working hours, set HVAC to active mode
-            
+            # During working hours, set HVAC to active mode   
             action = 14
         else:
             # Outside working hours, deactivate HVAC by setting wide bounds
             action = 15  
             #How to convert from ACTION MAPPING to single integer
             #action = 10
-            
-            
         return action

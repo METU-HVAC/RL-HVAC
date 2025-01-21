@@ -20,11 +20,11 @@ from utils.visualization import plot_and_save, plot_csv_data
 from tqdm import tqdm
 import wandb
 import pandas as pd
-
+from utils.experiment_utils import *
 ENV_NAME = "A403"
-ALGORITHM_NAME = "CO2_TEMP_ON_OFF"
+ALGORITHM_NAME = "ON_OFF"
 NUM_EPISODES = 1
-
+ 
 def create_experiment_name(env_name, episodes,algorithm_name):
     experiment_date = datetime.today().strftime('%Y-%m-%d_%H:%M')
     experiment_name = algorithm_name+'-' + env_name + \
@@ -38,36 +38,6 @@ def save_run_metrics(save_dir,avg_Train_reward, avg_Train_power, avg_total_co2_c
         f.write(f"Train Average Power = {avg_Train_power}\n")
         f.write(f"Train Average Total CO2 Concentration = {avg_total_co2_concentration}\n")
         f.write(f"Train Average Occupancy CO2 Concentration = {avg_occupnacy_co2_concentration}\n")
-
-def calculate_time_label(month_sin, month_cos, hour_sin, hour_cos, current_step, timesteps_per_hour):
-    """
-    Calculate the human-readable time label from sinusoidal time features and step information.
-
-    Args:
-        month_sin (float): Sine of the month.
-        month_cos (float): Cosine of the month.
-        hour_sin (float): Sine of the hour.
-        hour_cos (float): Cosine of the hour.
-        is_weekend (int): 1 if weekend, 0 otherwise.
-        current_step (int): Current timestep index.
-        timesteps_per_hour (int): Number of timesteps per hour.
-
-    Returns:
-        str: Formatted time label.
-    """
-    # Reconstruct the month (1-12)
-    month_angle = math.atan2(month_sin, month_cos)
-    month = int(((month_angle + 2 * math.pi) % (2 * math.pi)) * (12 / (2 * math.pi)) + 1)
-
-    # Reconstruct the hour (0-23)
-    hour_angle = math.atan2(hour_sin, hour_cos)
-    hour = int(((hour_angle + 2 * math.pi) % (2 * math.pi)) * (24 / (2 * math.pi)))
-
-    # Calculate the minute
-    minute = int((current_step % timesteps_per_hour) * (60 / timesteps_per_hour))
-
-    time_label = f"Month: {month:02}, Hour: {hour:02}:{minute:02}"
-    return time_label
 
 def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
     env = create_environment(start_date, end_date,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
@@ -99,11 +69,6 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
         #observation, reward, truncated, terminated, info = env.step(action.item())
         data = observation
         done = terminated or truncated
-        reward = torch.tensor([reward],dtype=torch.float32, device=device)
-
-
-        
-
 
         if done:
             next_state = None
@@ -184,7 +149,7 @@ def train(config=None):
         remove_previous_run_logs()
                 
         state_size =  17 # Adjust based on the size of your observation space
-        action_size = 37  
+        action_size = 49  
         train_interval = 100 # Train every n steps
         timesteps_per_hour = 6  # 10-minute intervals
         days_per_chunk = 10
@@ -265,12 +230,13 @@ def train(config=None):
                 train_total_reward = 0
                 train_total_power = 0
                 train_total_temp_violation = 0
-                co_violation_percentage = 0
-                temp_violation_percentage = 0
                 train_total_co2_concentration = []
                 train_total_occupancy_co2_concentration = []
+                co_violation_percentage = 0
+                temp_violation_percentage = 0
                 total_loss_list = []
-                co2_levels , inside_temp_levels, outside_temp_levels = [],[],[]
+                train_fan_speeds= []
+                train_co2_levels , train_inside_temp_levels, train_outside_temp_levels = [],[],[]
                 for train_chunk in train_chunks:
                     reward , power_consumption,temp_viol,loss,obs_dict = run_simulation(*train_chunk,
                                                                             "Training", 
@@ -294,28 +260,26 @@ def train(config=None):
                         if obs_dict['people_occupants'][i] != 0:
                             train_total_occupancy_co2_concentration.append(co2_concentration)
                     for i in range(len(obs_dict['co2_levels'])):
-                        co2_levels.append(obs_dict['co2_levels'][i])
-                        inside_temp_levels.append(obs_dict['air_temps'][i])
-                        outside_temp_levels.append(obs_dict['outdoor_temps'][i]) 
+                        train_co2_levels.append(obs_dict['co2_levels'][i])
+                        train_inside_temp_levels.append(obs_dict['air_temps'][i])
+                        train_outside_temp_levels.append(obs_dict['outdoor_temps'][i])
+                        train_fan_speeds.append(obs_dict['fan_speeds'][i])
                         
-                    # look at the people_occupants and and is_co_violatid and temp_violtion
-                    # and calcualte the percentage of the time that co2 is violated and the temp is violated
                     co_violation_percentage += sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
-                    temp_violation_percentage += sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100
-
+                    temp_violation_percentage += sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100 
                     
                     
-
+                    
                 print(f"Loss for episode {episode}: {np.mean(total_loss_list)}")    
-                avg_train_reward = (train_total_reward / len(train_chunks)).item()
+                avg_train_reward = (train_total_reward / len(train_chunks))
                 avg_train_power = (train_total_power / len(train_chunks))
+                
                 avg_train_temp_violation = (temp_violation_percentage / len(train_chunks))
                 avg_train_co2_violation = (co_violation_percentage / len(train_chunks))
                 
                 
-                
-                
-
+                with open("train_average_reward.txt", "a") as f:
+                    f.write(f"Episode {episode}: Train Average Reward = {avg_train_reward}\n")
                 #plot_and_save(**obs_dict, episode_type="Training", episode_num=episode,plots_dir=experiment_dir)
             
                 # Validation: Full sweep over the shuffled validation dataset
@@ -327,6 +291,8 @@ def train(config=None):
                 temp_violation_percentage = 0
                 val_total_occupancy_co2_concentration = []
                 test_count = 0
+                val_fan_speeds = []
+                val_co2_levels , val_inside_temp_levels, val_outside_temp_levels = [],[],[]
                 for val_chunk in val_chunks:
                     test_count += 1
                     reward , power_consumption,temp_viol,loss,obs_dict = run_simulation(*val_chunk,
@@ -348,45 +314,50 @@ def train(config=None):
                     
                     for i in range(len(obs_dict['co2_levels'])):
                         co2_concentration = obs_dict['co2_levels'][i]
+                        val_co2_levels.append(co2_concentration)
                         val_total_co2_concentration.append(co2_concentration)
+                        val_fan_speeds.append(obs_dict['fan_speeds'][i])
+                        val_inside_temp_levels.append(obs_dict['air_temps'][i])
+                        val_outside_temp_levels.append(obs_dict['outdoor_temps'][i])
                         if obs_dict['people_occupants'][i] != 0:
                             val_total_occupancy_co2_concentration.append(co2_concentration)
                             
-                    for i in range(len(obs_dict['co2_levels'])):
-                        co2_levels.append(obs_dict['co2_levels'][i])
-                        inside_temp_levels.append(obs_dict['air_temps'][i])
-                        outside_temp_levels.append(obs_dict['outdoor_temps'][i]) 
-
                     co_violation_percentage += sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
-                    temp_violation_percentage += sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100
-
-                avg_val_reward = (val_total_reward / len(val_chunks)).item()
+                    temp_violation_percentage += sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100 
+                    
+                avg_val_reward = (val_total_reward / len(val_chunks))
                 avg_val_power = (val_total_power / len(val_chunks))
                 avg_val_temp_violation = (temp_violation_percentage / len(val_chunks))
                 avg_val_co2_violation = (co_violation_percentage / len(val_chunks))
-                
-                wandb.log({"avg_power": avg_train_power},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_co2_train":np.mean(train_total_co2_concentration),"avg_occupancy_co2_train":np.mean(train_total_occupancy_co2_concentration)},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_reward_train":avg_train_reward},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_train_temp_violation_percentage":avg_train_temp_violation},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_train_co2_violation_percentage":avg_train_co2_violation},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_val_power": avg_val_power},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_co2_val":np.mean(val_total_co2_concentration),"avg_occupancy_co2_val":np.mean(val_total_occupancy_co2_concentration)},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_reward_val":avg_val_reward},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_val_temp_violation_percentage":avg_val_temp_violation},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_val_co2_violation_percentage":avg_val_co2_violation},step=episode * len(inside_temp_levels))
 
-                for timestep in range(len(inside_temp_levels)):
+                wandb.log({"avg_power": avg_train_power},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_co2_train":np.mean(train_total_co2_concentration),"avg_occupancy_co2_train":np.mean(train_total_occupancy_co2_concentration)},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_reward_train":avg_train_reward},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_train_temp_violation_percentage":avg_train_temp_violation},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_train_co2_violation_percentage":avg_train_co2_violation},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_val_power": avg_val_power},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_co2_val":np.mean(val_total_co2_concentration),"avg_occupancy_co2_val":np.mean(val_total_occupancy_co2_concentration)},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_reward_val":avg_val_reward},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_val_temp_violation_percentage":avg_val_temp_violation},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_val_co2_violation_percentage":avg_val_co2_violation},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                
+                
+                
+               
+                for timestep in range(len(train_inside_temp_levels)):
                     wandb.log({
-                        "val_inside_temperature_timestep": inside_temp_levels[timestep],
-                        "val_outside_temperature_timestep": outside_temp_levels[timestep],
-                        "val_co2_level_timestep": co2_levels[timestep],
-                    }, step=episode * len(inside_temp_levels) + timestep)  # Increment step for each timestep
+                        "train_inside_temperature_timestep": train_inside_temp_levels[timestep],
+                        "train_outside_temperature_timestep": train_outside_temp_levels[timestep],
+                        "train_co2_level_timestep": train_co2_levels[timestep],
+                        "train_fan_speed_timestep": train_fan_speeds[timestep]
+                    }, step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels) )+ timestep)  # Increment step for each timestep
+                for timestep in range(len(val_inside_temp_levels)):
                     wandb.log({
-                        "train_inside_temperature_timestep": inside_temp_levels[timestep],
-                        "train_outside_temperature_timestep": outside_temp_levels[timestep],
-                        "train_co2_level_timestep": co2_levels[timestep],
-                    }, step=episode * len(inside_temp_levels) + timestep)  # Increment step for each timestep
+                        "val_inside_temperature_timestep": val_inside_temp_levels[timestep],
+                        "val_outside_temperature_timestep": val_outside_temp_levels[timestep],
+                        "val_co2_level_timestep": val_co2_levels[timestep],
+                        "val_fan_speed_timestep": val_fan_speeds[timestep]
+                    }, step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels))+ timestep+len(train_inside_temp_levels))  # Increment step for each timestep
 
                 #plot_and_save(**obs_dict, episode_type="Validation", episode_num=episode,plots_dir=experiment_dir)
                 

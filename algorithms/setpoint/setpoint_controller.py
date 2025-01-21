@@ -5,15 +5,25 @@ class SetpointController():
     is above 700 ppm and turns off the fan when the CO2 concentration is below 600 ppm.
     '''
     # mapping = {
+    # Summer actions 
+    #     20: [20, 23, 0.75, 0.0],
+    #     23: [20, 23, 0.75, 0.75],
 
+    # Winter actions
+    #     35: [23, 26, 0.75, 0.0],
+    #     38: [23, 26, 0.75, 0.75],
+
+    #     45: OFF_ACTION  # Off action
+    # }
     def __init__(self):
         self.is_co2_open = False
         self.is_hvac_open = False
-        self.summer_hvac_on_co2_off = 16
-        self.summer_hvac_on_co2_on = 18
-        self.winter_hvac_on_co2_off = 28
-        self.winter_hvac_on_co2_on = 30
-        self.off_action = 36
+        self.summer_hvac_on_co2_off = 20
+        self.summer_hvac_on_co2_on = 23
+        self.winter_hvac_on_co2_off = 35
+        self.winter_hvac_on_co2_on = 38
+        self.hvac_off_co2_on = 48
+        self.off_action = 45
         self.summer_limits = [23,26]
         self.winter_limits = [20,23.5]
 
@@ -27,33 +37,45 @@ class SetpointController():
         month_sin = state[0][0]
         month_cos = state[0][1]
         month = int((math.atan2(month_sin, month_cos) * 12 / (2 * math.pi)) % 12) + 1
-
+        
+        occupancy = state[0][11]
         # Determine season (summer or winter)
         is_summer = 6 <= month <= 9
-
+        # Select seasonal limits based on the current season
+        lower_limit, upper_limit = (
+            self.summer_limits if is_summer else self.winter_limits
+        )
+        
+        # Add hysteresis margins
+        lower_hysteresis = lower_limit - 0.5
+        upper_hysteresis = upper_limit + 0.5
+        # Determine HVAC state based on the current temperature
+        if not self.is_hvac_open:
+            # If HVAC is off, decide to turn it on
+            if temp < lower_limit:  # Too cold, need heating
+                self.is_hvac_open = True
+                self.is_cooling = False  # Enter heating mode
+            elif temp > upper_limit:  # Too hot, need cooling
+                self.is_hvac_open = True
+                self.is_cooling = True  # Enter cooling mode
+        else:
+            # If HVAC is already on, use hysteresis to decide when to turn it off
+            if self.is_cooling and temp <= lower_hysteresis:  # Cooling complete
+                self.is_hvac_open = False
+            elif not self.is_cooling and temp >= upper_hysteresis:  # Heating complete
+                self.is_hvac_open = False
         # Handle CO2 Fan hysteresis
         if co2 > 700:
             self.is_co2_open = True
         elif co2 < 600:
             self.is_co2_open = False
 
-        # Summer HVAC control (cooling)
-        if is_summer:
-            if temp > self.summer_limits[1]:  # Above upper limit
-                self.is_hvac_open = True
-            elif temp < self.summer_limits[0]:  # Below lower limit
-                self.is_hvac_open = False
-            if self.is_hvac_open:
-                return self.summer_hvac_on_co2_on if self.is_co2_open else self.summer_hvac_on_co2_off
-
-        # Winter HVAC control (heating)
+        if occupancy > 0:
+            if self.is_co2_open:
+                return self.summer_hvac_on_co2_on if is_summer else self.winter_hvac_on_co2_on
+            else:
+                return self.summer_hvac_on_co2_off if is_summer else self.winter_hvac_on_co2_off
+                
         else:
-            if temp < self.winter_limits[0]:  # Below lower limit
-                self.is_hvac_open = True
-            elif temp > self.winter_limits[1]:  # Above upper limit
-                self.is_hvac_open = False
-            if self.is_hvac_open:
-                return self.winter_hvac_on_co2_on if self.is_co2_open else self.winter_hvac_on_co2_off
-
-        # If no conditions are met, turn off
-        return self.off_action
+            #If not in working hours, close everything
+            return self.off_action

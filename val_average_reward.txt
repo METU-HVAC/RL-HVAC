@@ -1110,3 +1110,257 @@ Episode 7: val Average Reward = -10496.5390625 ,Epsilon = 0.07566809421173686
 Episode 8: val Average Reward = -10069.650390625 ,Epsilon = 0.06556848611581077
 Episode 9: val Average Reward = -9812.9072265625 ,Epsilon = 0.05944276415454969
 Episode 10: val Average Reward = -10028.3525390625 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -16280.85876681734
+Episode 1: val Average Reward = -14698.839205873574
+Episode 2: val Average Reward = -14698.839205873574
+Episode 3: val Average Reward = -14698.839205873574
+Episode 1: val Average Reward = -21615.057375192202
+Episode 2: val Average Reward = -21615.057375192202
+Episode 3: val Average Reward = -21615.057375192202
+Episode 4: val Average Reward = -21615.057375192202
+Episode 1: val Average Reward = -32313.41788359431
+Episode 1: val Average Reward = -6500.4136702610385
+Episode 1: val Average Reward = -12391.797450741291
+Episode 2: val Average Reward = -12391.797450741291
+Episode 3: val Average Reward = -12391.797450741291
+Episode 1: val Average Reward = -22279.616627791576
+Episode 1: val Average Reward = -11378.270409770543
+Episode 1: val Average Reward = -14210.81867297035
+Episode 2: val Average Reward = -14210.81867297035
+Episode 3: val Average Reward = -14210.81867297035
+Episode 4: val Average Reward = -14210.81867297035
+Episode 5: val Average Reward = -14210.81867297035
+Episode 6: val Average Reward = -14210.81867297035
+Episode 7: val Average Reward = -14210.81867297035
+Episode 8: val Average Reward = -14210.81867297035
+Episode 9: val Average Reward = -14210.81867297035
+Episode 10: val Average Reward = -14210.81867297035
+Episode 1: val Average Reward = -12713.470700356389
+Episode 2: val Average Reward = -12713.470700356389
+Episode 1: val Average Reward = -33347.12324545324
+Episode 2: val Average Reward = -33347.12324545324
+Episode 3: val Average Reward = -33347.12324545324
+Episode 1: val Average Reward = -13437.420460010775
+Episode 2: val Average Reward = -13437.420460010775
+Episode 3: val Average Reward = -13437.420460010775
+Episode 4: val Average Reward = -13437.420460010775
+Episode 5: val Average Reward = -13437.420460010775
+Episode 6: val Average Reward = -13437.420460010775
+Episode 7: val Average Reward = -13437.420460010775
+Episode 1: val Average Reward = -12538.91135633321
+Episode 2: val Average Reward = -12538.91135633321
+Episode 3: val Average Reward = -12538.91135633321
+Episode 1: val Average Reward = -13093.38800184589
+Episode 2: val Average Reward = -13093.38800184589
+Episode 3: val Average Reward = -13093.38800184589
+Episode 4: val Average Reward = -13093.38800184589
+Episode 5: val Average Reward = -13093.38800184589
+Episode 6: val Average Reward = -13093.38800184589
+Episode 1: val Average Reward = -12418.142542757007
+Episode 2: val Average Reward = -12418.142542757007
+Episode 3: val Average Reward = -12418.142542757007
+Episode 4: val Average Reward = -12418.142542757007
+Episode 1: val Average Reward = -12065.44564267264
+Episode 2: val Average Reward = -12065.44564267264
+Episode 1: val Average Reward = -9413.352634107077
+Episode 2: val Average Reward = -9413.352634107077
+Episode 3: val Average Reward = -9413.352634107077
+Episode 1: val Average Reward = -7077.343044834933
+Episode 2: val Average Reward = -7077.343044834933
+Episode 3: val Average Reward = -7077.343044834933
+Episode 1: val Average Reward = -14938.606887671338
+Episode 1: val Average Reward = -3200.768995648224
+Episode 2: val Average Reward = -3200.768995648224
+Episode 3: val Average Reward = -3200.768995648224
+Episode 4: val Average Reward = -3200.768995648224
+Episode 1: val Average Reward = -6466.293475173179
+Episode 2: val Average Reward = -6466.293475173179
+Episode 1: val Average Reward = -3851.3212890625 ,Epsilon = 0.5655574540377002
+Episode 1: val Average Reward = -10082.4052734375 ,Epsilon = 0.565563847398944
+Episode 2: val Average Reward = -11473.1943359375 ,Epsilon = 0.36270528048686496
+Episode 3: val Average Reward = -4391.634765625 ,Epsilon = 0.23966534006932233
+Episode 4: val Average Reward = -8115.28662109375 ,Epsilon = 0.16503784383686704
+Episode 5: val Average Reward = -4383.0830078125 ,Epsilon = 0.11977397931429386
+Episode 1: val Average Reward = tensor([-3658.0034], device='cuda:0') ,Epsilon = 0.5655574540377002
+Episode 1: val Average Reward = -6578.006670592852 ,Epsilon = 0.5656107344706733
+Episode 1: val Average Reward = -3657.999969628088 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -2649.7267269866834 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -2559.8549224241906 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -2384.52843774526 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -2658.962836021675 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -3082.62646421162 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -2309.437432756343 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -2079.2516908988578 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -2014.5122296062557 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -2034.9407301540462 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -3657.999969628088 ,Epsilon = 0.5655574540377002
+Episode 1: val Average Reward = -3657.999969628088 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -2649.7267269866834 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -2559.8549224241906 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -2384.52843774526 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -2658.962836021675 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -3082.62646421162 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -2309.437432756343 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -2079.2516908988578 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -2014.5122296062557 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -2034.9407301540462 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -3924.9077673626794 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -2647.6139854383196 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -2410.347069269298 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -2123.974075496941 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -2257.8580647296344 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -1868.4387199590183 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -2044.3593027597115 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -1512.6161164290359 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -1400.9780642454134 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -1538.0794321443823 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -3250.8723104727483 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -3985.9324546314456 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -3050.787624870912 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -3360.048885417208 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -3335.009782182283 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -3343.1540483194776 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -3105.933814526699 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -3039.3440299660806 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -2652.339205013749 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -3825.2287728719643 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -4021.9877170636137 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -4252.395888990695 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -3172.1220303190116 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -2711.0443169146724 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -3032.3423521608283 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -2989.753833895761 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -2576.271534518223 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -2563.9468866842376 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -2738.5106355288844 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -2731.196424474104 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -3091.6093103383923 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -2046.2256989402133 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -2041.493434547198 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -1603.0713505908604 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -1271.0385805242895 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -1054.3266791585702 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -919.637341616219 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -1236.5651098127476 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -1547.9823061661768 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -1622.5635595862566 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -3365.2310642738717 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -2849.5736551309888 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -1452.727101995015 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -1410.9812560860973 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -1911.092211722742 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -1496.188854492011 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -1155.2153430372139 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -1374.8072595705057 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -937.5064313418276 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -847.876738972789 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -2252.088307571588 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -5463.922859990298 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -2380.2934120404057 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -2170.8582607759026 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -2501.6557747416555 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -2381.2511625366856 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -2332.950240031631 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -2393.6295322819074 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -2579.508069454897 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -2526.3011344300544 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -3657.999969628088 ,Epsilon = 0.5655574540377002
+Episode 2: val Average Reward = -2649.7267269866834 ,Epsilon = 0.36270140271725193
+Episode 3: val Average Reward = -2559.8549224241906 ,Epsilon = 0.23966298808316067
+Episode 4: val Average Reward = -2384.52843774526 ,Epsilon = 0.16503641728514876
+Episode 5: val Average Reward = -2658.962836021675 ,Epsilon = 0.11977311406693907
+Episode 6: val Average Reward = -3082.62646421162 ,Epsilon = 0.09231953290522539
+Episode 7: val Average Reward = -2309.437432756343 ,Epsilon = 0.07566809421173686
+Episode 8: val Average Reward = -2079.2516908988578 ,Epsilon = 0.06556848611581077
+Episode 9: val Average Reward = -2014.5122296062557 ,Epsilon = 0.05944276415454969
+Episode 10: val Average Reward = -2034.9407301540462 ,Epsilon = 0.055727325972169825
+Episode 1: val Average Reward = -1888.2934814991265
+Episode 2: val Average Reward = -1730.0529300053797
+Episode 1: val Average Reward = -7546.053886602173
+Episode 2: val Average Reward = -7546.053886602173
+Episode 3: val Average Reward = -7546.053886602173
+Episode 4: val Average Reward = -7546.053886602173
+Episode 5: val Average Reward = -7546.053886602173
+Episode 1: val Average Reward = -6715.19203772416
+Episode 2: val Average Reward = -6097.928683385565
+Episode 3: val Average Reward = -4396.749552408434
+Episode 1: val Average Reward = -4052.7590256081503
+Episode 2: val Average Reward = -4297.099902595611
+Episode 3: val Average Reward = -4571.488541334199
+Episode 4: val Average Reward = -4023.018835791293
+Episode 5: val Average Reward = -4767.030373312548
+Episode 6: val Average Reward = -4421.479962588714
+Episode 7: val Average Reward = -6524.110193685214
+Episode 8: val Average Reward = -4729.187405490625
+Episode 9: val Average Reward = -4824.244816138403
+Episode 10: val Average Reward = -6003.021253933641
+Episode 1: val Average Reward = -3313.8316446034073
+Episode 2: val Average Reward = -7581.901853270099
+Episode 3: val Average Reward = -4036.2623373490705
+Episode 4: val Average Reward = -4787.520643079403
+Episode 5: val Average Reward = -4955.081331944733
+Episode 6: val Average Reward = -4088.9437723831793
+Episode 7: val Average Reward = -3999.9627317670843
+Episode 8: val Average Reward = -3950.884847559008
+Episode 9: val Average Reward = -7555.490214944475
+Episode 10: val Average Reward = -3672.866046273065
+Episode 1: val Average Reward = -6751.61200087694
+Episode 2: val Average Reward = -5943.806178251746
+Episode 3: val Average Reward = -5858.7986876562745
+Episode 4: val Average Reward = -6138.15126081557
+Episode 5: val Average Reward = -5698.295640312486
+Episode 6: val Average Reward = -5639.585327606036
+Episode 7: val Average Reward = -5465.795978843604
+Episode 8: val Average Reward = -4429.87928601531
+Episode 9: val Average Reward = -4409.622681185791
+Episode 10: val Average Reward = -4354.212634754852
+Episode 1: val Average Reward = -5884.44063240374
+Episode 2: val Average Reward = -5541.848706237336
+Episode 3: val Average Reward = -5090.29062439141
+Episode 4: val Average Reward = -5864.450468518002
+Episode 5: val Average Reward = -5139.82598478272
+Episode 6: val Average Reward = -6233.457349772556
+Episode 7: val Average Reward = -5002.517289415678
+Episode 8: val Average Reward = -5269.783328924052
+Episode 9: val Average Reward = -3995.034617412907
+Episode 10: val Average Reward = -4429.06318023941
+Episode 1: val Average Reward = -3102.6812504930654
+Episode 2: val Average Reward = -2225.3793025946416
+Episode 3: val Average Reward = -2392.133893565225
+Episode 4: val Average Reward = -2274.6368534503804
+Episode 5: val Average Reward = -2048.732473576561
+Episode 6: val Average Reward = -2289.937256490903
+Episode 7: val Average Reward = -2337.754614199746
+Episode 8: val Average Reward = -2464.4623360186
+Episode 9: val Average Reward = -7007.759008382033
+Episode 10: val Average Reward = -6845.013853514292
+Episode 1: val Average Reward = -2938.1530786930534
+Episode 2: val Average Reward = -2074.410246408167
+Episode 3: val Average Reward = -1780.289681155167
+Episode 4: val Average Reward = -2419.1941454072453
+Episode 5: val Average Reward = -2423.6102273513666
+Episode 6: val Average Reward = -5061.765193491273
+Episode 7: val Average Reward = -2338.244066877275
+Episode 8: val Average Reward = -2248.999370723165
+Episode 9: val Average Reward = -2259.4745057709865
+Episode 10: val Average Reward = -2849.508383091908
+Episode 1: val Average Reward = -4037.409230717553
+Episode 2: val Average Reward = -5077.050567146333
+Episode 3: val Average Reward = -5404.7664054304505
+Episode 4: val Average Reward = -4155.79475681053
+Episode 5: val Average Reward = -4910.361185274985
+Episode 6: val Average Reward = -5564.416318105258
+Episode 7: val Average Reward = -4804.480735103331
+Episode 8: val Average Reward = -4846.909407678495
+Episode 9: val Average Reward = -4104.145369389766
+Episode 10: val Average Reward = -4330.791464202457
+Episode 1: val Average Reward = -4052.7590256081503
+Episode 2: val Average Reward = -4297.099902595611
+Episode 3: val Average Reward = -4571.488541334199
+Episode 4: val Average Reward = -4023.018835791293
+Episode 5: val Average Reward = -4767.030373312548
+Episode 6: val Average Reward = -4421.479962588714
+Episode 7: val Average Reward = -6524.110193685214
+Episode 8: val Average Reward = -4729.187405490625
+Episode 9: val Average Reward = -4824.244816138403
+Episode 10: val Average Reward = -6003.021253933641

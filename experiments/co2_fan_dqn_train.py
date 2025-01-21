@@ -19,10 +19,10 @@ from utils.visualization import plot_and_save, plot_csv_data
 from tqdm import tqdm
 import wandb
 import pandas as pd
-from utils.experiment_utils import create_experiment_name, save_run_metrics, calculate_time_label
+from utils.experiment_utils import *
 
 ENV_NAME = "A403"
-ALGORITHM_NAME = "CO2_TEMP_DQN"
+ALGORITHM_NAME = "DQN"
 NUM_EPISODES = 10
 
 def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
@@ -44,12 +44,12 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
         if state is None:
             print("State is None")
         #state = normalize_observation(state,obs_mean,obs_std_dev)
-       
-       
+        normalized_obs = normalize_observation(state,obs_means,obs_stds)
+        normalized_obs = torch.tensor(normalized_obs, dtype=torch.float32, device=device)
         if episode_type == "Training":
-            action = agent.select_action(state)  # Epsilon-greedy action for training
+            action = agent.select_action(normalized_obs)  # Epsilon-greedy action for training
         else:
-            action = agent.choose_greedy_action(state)  # Greedy action for validation/testing
+            action = agent.choose_greedy_action(normalized_obs)  # Greedy action for validation/testing
 
         fan_speed = DEFAULT_A403_DISCRETE_FUNCTION(action.item())[3]
         np_action = np.array([action.item()], dtype=np.float32)  # Adjust dtype to match environment
@@ -58,16 +58,22 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
         #observation, reward, truncated, terminated, info = env.step(action.item())
         data = observation
         done = terminated or truncated
+        total_reward += reward
         reward = torch.tensor([reward],dtype=torch.float32, device=device)
 
         if done:
-            next_state = None
+            #next_state = None
+            next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
+            
         else:
             next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
             #next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
         if episode_type == "Training":
             # Store transition in replay buffer
-            agent.store_transition(state, action, next_state, reward)
+            
+            normalized_next_obs = normalize_observation(next_state,obs_means,obs_stds)
+            normalized_next_obs = torch.tensor(normalized_next_obs, dtype=torch.float32, device=device)
+            agent.store_transition(normalized_obs, action, normalized_next_obs, reward)
             # Train DQN every few steps if buffer size is sufficient
             if current_step % train_interval == 0:
                 # Perform one step of the optimization (on the policy network)
@@ -103,7 +109,7 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
         time_label = calculate_time_label(data[0], data[1], data[3], data[4], current_step, timesteps_per_hour)
         #time_labels.append(f"{month:02}-{day:02} {hour:02}:{minute:02}")
         time_labels.append(time_label)
-        total_reward += reward
+        
         #print(info)
         
         if done:
@@ -147,7 +153,7 @@ def train(config=None):
         remove_previous_run_logs()
                 
         state_size =  17 # Adjust based on the size of your observation space
-        action_size = 37  
+        action_size = 49  
         train_interval = 100 # Train every n steps
         timesteps_per_hour = 6  # 10-minute intervals
         days_per_chunk = 10
@@ -192,15 +198,19 @@ def train(config=None):
             "lr":1e-4,
             "memory_capacity": 100000
         }
+        total_weight = config.temp_weight + config.co2_weight + config.energy_weight
+        energy_weight = config.energy_weight / total_weight
+        co2_weight = config.co2_weight / total_weight
+        temp_weight = config.temp_weight / total_weight
         reward_config = {
             'temperature_variables': ['air_temperature'],
             'co2_variable': 'air_co2',
             'energy_variables': ['HVAC_electricity_demand_rate'],
             'range_comfort_winter': (20.0, 23.5),
             'range_comfort_summer': (23.0, 26.0),
-            'energy_weight': config.energy_weight,
-            'co2_weight': config.co2_weight,
-            'temperature_weight': config.temp_weight,
+            'energy_weight': energy_weight,
+            'co2_weight': co2_weight,
+            'temperature_weight': temp_weight,
             'lambda_energy': 1e-2,
             'lambda_temperature': 1.0,
             'lambda_co2': 1.0,
@@ -232,7 +242,8 @@ def train(config=None):
                 co_violation_percentage = 0
                 temp_violation_percentage = 0
                 total_loss_list = []
-                co2_levels , inside_temp_levels, outside_temp_levels = [],[],[]
+                train_fan_speeds= []
+                train_co2_levels , train_inside_temp_levels, train_outside_temp_levels = [],[],[]
                 for train_chunk in train_chunks:
                     reward , power_consumption,temp_viol,loss,obs_dict = run_simulation(*train_chunk,
                                                                             "Training", 
@@ -256,16 +267,18 @@ def train(config=None):
                         if obs_dict['people_occupants'][i] != 0:
                             train_total_occupancy_co2_concentration.append(co2_concentration)
                     for i in range(len(obs_dict['co2_levels'])):
-                        co2_levels.append(obs_dict['co2_levels'][i])
-                        inside_temp_levels.append(obs_dict['air_temps'][i])
-                        outside_temp_levels.append(obs_dict['outdoor_temps'][i])
+                        train_co2_levels.append(obs_dict['co2_levels'][i])
+                        train_inside_temp_levels.append(obs_dict['air_temps'][i])
+                        train_outside_temp_levels.append(obs_dict['outdoor_temps'][i])
+                        train_fan_speeds.append(obs_dict['fan_speeds'][i])
+                        
                     co_violation_percentage += sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
                     temp_violation_percentage += sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100 
                     
                     
                     
                 print(f"Loss for episode {episode}: {np.mean(total_loss_list)}")    
-                avg_train_reward = (train_total_reward / len(train_chunks)).item()
+                avg_train_reward = (train_total_reward / len(train_chunks))
                 avg_train_power = (train_total_power / len(train_chunks))
                 
                 avg_train_temp_violation = (temp_violation_percentage / len(train_chunks))
@@ -273,7 +286,7 @@ def train(config=None):
                 
                 
                 with open("train_average_reward.txt", "a") as f:
-                    f.write(f"Episode {episode}: Train Average Reward = {avg_train_reward} ,Epsilon = {agent.eps_threshold}\n")
+                    f.write(f"Episode {episode}: Train Average Reward = {avg_train_reward}\n")
                 #plot_and_save(**obs_dict, episode_type="Training", episode_num=episode,plots_dir=experiment_dir)
             
                 # Validation: Full sweep over the shuffled validation dataset
@@ -285,6 +298,8 @@ def train(config=None):
                 temp_violation_percentage = 0
                 val_total_occupancy_co2_concentration = []
                 test_count = 0
+                val_fan_speeds = []
+                val_co2_levels , val_inside_temp_levels, val_outside_temp_levels = [],[],[]
                 for val_chunk in val_chunks:
                     test_count += 1
                     reward , power_consumption,temp_viol,loss,obs_dict = run_simulation(*val_chunk,
@@ -306,37 +321,50 @@ def train(config=None):
                     
                     for i in range(len(obs_dict['co2_levels'])):
                         co2_concentration = obs_dict['co2_levels'][i]
+                        val_co2_levels.append(co2_concentration)
                         val_total_co2_concentration.append(co2_concentration)
+                        val_fan_speeds.append(obs_dict['fan_speeds'][i])
+                        val_inside_temp_levels.append(obs_dict['air_temps'][i])
+                        val_outside_temp_levels.append(obs_dict['outdoor_temps'][i])
                         if obs_dict['people_occupants'][i] != 0:
                             val_total_occupancy_co2_concentration.append(co2_concentration)
-
-                avg_val_reward = (val_total_reward / len(val_chunks)).item()
+                            
+                    co_violation_percentage += sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
+                    temp_violation_percentage += sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100 
+                    
+                avg_val_reward = (val_total_reward / len(val_chunks))
                 avg_val_power = (val_total_power / len(val_chunks))
                 avg_val_temp_violation = (temp_violation_percentage / len(val_chunks))
                 avg_val_co2_violation = (co_violation_percentage / len(val_chunks))
 
-                wandb.log({"avg_power": avg_train_power},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_co2_train":np.mean(train_total_co2_concentration),"avg_occupancy_co2_train":np.mean(train_total_occupancy_co2_concentration)},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_reward_train":avg_train_reward},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_train_temp_violation_percentage":avg_train_temp_violation},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_train_co2_violation_percentage":avg_train_co2_violation},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_val_power": avg_val_power},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_co2_val":np.mean(val_total_co2_concentration),"avg_occupancy_co2_val":np.mean(val_total_occupancy_co2_concentration)},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_reward_val":avg_val_reward},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_val_temp_violation_percentage":avg_val_temp_violation},step=episode * len(inside_temp_levels))
-                wandb.log({"avg_val_co2_violation_percentage":avg_val_co2_violation},step=episode * len(inside_temp_levels))
-
-                for timestep in range(len(inside_temp_levels)):
+                wandb.log({"avg_power": avg_train_power},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_co2_train":np.mean(train_total_co2_concentration),"avg_occupancy_co2_train":np.mean(train_total_occupancy_co2_concentration)},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_reward_train":avg_train_reward},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_train_temp_violation_percentage":avg_train_temp_violation},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_train_co2_violation_percentage":avg_train_co2_violation},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_val_power": avg_val_power},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_co2_val":np.mean(val_total_co2_concentration),"avg_occupancy_co2_val":np.mean(val_total_occupancy_co2_concentration)},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_reward_val":avg_val_reward},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_val_temp_violation_percentage":avg_val_temp_violation},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                wandb.log({"avg_val_co2_violation_percentage":avg_val_co2_violation},step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels)))
+                
+                
+                
+               
+                for timestep in range(len(train_inside_temp_levels)):
                     wandb.log({
-                        "val_inside_temperature_timestep": inside_temp_levels[timestep],
-                        "val_outside_temperature_timestep": outside_temp_levels[timestep],
-                        "val_co2_level_timestep": co2_levels[timestep],
-                    }, step=episode * len(inside_temp_levels) + timestep)  # Increment step for each timestep
+                        "train_inside_temperature_timestep": train_inside_temp_levels[timestep],
+                        "train_outside_temperature_timestep": train_outside_temp_levels[timestep],
+                        "train_co2_level_timestep": train_co2_levels[timestep],
+                        "train_fan_speed_timestep": train_fan_speeds[timestep]
+                    }, step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels) )+ timestep)  # Increment step for each timestep
+                for timestep in range(len(val_inside_temp_levels)):
                     wandb.log({
-                        "train_inside_temperature_timestep": inside_temp_levels[timestep],
-                        "train_outside_temperature_timestep": outside_temp_levels[timestep],
-                        "train_co2_level_timestep": co2_levels[timestep],
-                    }, step=episode * len(inside_temp_levels) + timestep)  # Increment step for each timestep
+                        "val_inside_temperature_timestep": val_inside_temp_levels[timestep],
+                        "val_outside_temperature_timestep": val_outside_temp_levels[timestep],
+                        "val_co2_level_timestep": val_co2_levels[timestep],
+                        "val_fan_speed_timestep": val_fan_speeds[timestep]
+                    }, step=episode * (len(train_inside_temp_levels) + len(val_inside_temp_levels))+ timestep+len(train_inside_temp_levels))  # Increment step for each timestep
                 
                 with open("val_average_reward.txt", "a") as f:
                     f.write(f"Episode {episode}: val Average Reward = {avg_val_reward} ,Epsilon = {agent.eps_threshold}\n")
@@ -381,28 +409,39 @@ def train(config=None):
 
 name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
 sweep_config = {
-    'method': 'bayes' ,
+    'method': 'grid' ,
     'name' : name
     }
 metric = {
     'name': 'avg_power',
     'goal': 'minimize'   
     }
+# parameters_dict = ({
+#     'energy_weight': {
+#         'distribution': 'uniform',
+#         'min': 0.1,
+#         'max': 1.0
+#       },
+#     'co2_weight': {
+#         'distribution': 'uniform',
+#         'min': 0.1,
+#         'max': 1.0
+#       },
+#     'temp_weight': {
+#         'distribution': 'uniform',
+#         'min': 0.1,
+#         'max': 1.0
+#       }
+#     })
 parameters_dict = ({
     'energy_weight': {
-        'distribution': 'uniform',
-        'min': 0.1,
-        'max': 1.0
+        'values': [1,2]
       },
     'co2_weight': {
-        'distribution': 'uniform',
-        'min': 0.1,
-        'max': 1.0
+        'values': [1,2]
       },
     'temp_weight': {
-        'distribution': 'uniform',
-        'min': 0.1,
-        'max': 1.0
+        'values': [1,2]
       }
     })
 sweep_config['parameters'] = parameters_dict
@@ -410,6 +449,6 @@ sweep_config['metric'] = metric
 
 
 sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=20)
+wandb.agent(sweep_id, train, count=8)
 
 wandb.finish()
