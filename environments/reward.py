@@ -27,7 +27,7 @@ class CO2andTemperatureReward(LinearReward):
             lambda_energy: float = 1e-2,
             lambda_co2: float = 1.0,
             lambda_temperature: float = 1.0,
-            co2_threshold: float = 700,
+            co2_threshold: float = 800,
 
         ):
             super(LinearReward, self).__init__()
@@ -49,8 +49,9 @@ class CO2andTemperatureReward(LinearReward):
 
             self.energy_rew_arr = []
             self.co2_rew_arr = []
+            self.comfort_term_arr = []
             self.daily_timestep_count = 0
-            self.timesteps_per_day = 288
+            self.timesteps_per_day = 144*9 # 12*24
 
 
     def __call__(self, obs_dict: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
@@ -118,21 +119,55 @@ class CO2andTemperatureReward(LinearReward):
         return reward, reward_terms
     def _get_co2_reward(self, co2_concentration: float) -> float:
         """
-        Calculate the penalty based on CO2 concentration.
+        Calculates a reward based on CO2 levels.
+
+        Rewards +1 for CO2 <= 700 ppm, -1 for CO2 >= 900 ppm, and a linear
+        interpolation between these two points.
 
         Args:
-            co2_concentration (float): CO2 concentration in ppm.
+            CO2 (float): The CO2 level in ppm.
 
         Returns:
-            float: Negative absolute CO2 penalty.
+            float: The reward value.
         """
-        
-        if co2_concentration < self.co2_threshold:
-            co2_reward = 1.0
+        if co2_concentration <= 800:
+            return 0.0
         else:
-            co2_reward = -20.0
+            return -1.0
         
-        return co2_reward
+    def temperature_comfort_reward(self,T, T_min=23.0, T_max=26.0, people_count=1):
+        """
+        Calculates a reward based on temperature comfort.
+
+        Rewards -1 for temperatures outside [T_min - 0.5, T_max + 0.5].
+        Rewards 0 for temperatures within [T_min, T_max].
+        Linearly interpolates between 0 and -1 for temperatures between
+        [T_min - 0.5, T_min] and [T_max, T_max + 0.5].
+        Returns 0 if there are no people.
+
+        Args:
+            T (float): The temperature.
+            T_min (float): The minimum comfortable temperature.
+            T_max (float): The maximum comfortable temperature.
+            people_count (int): The number of people present.
+
+        Returns:
+            float: The reward value.
+        """
+        if people_count == 0:
+            return 0  # No occupants, temperature comfort is not relevant
+
+        lower_limit = T_min - 0.5
+        higher_limit = T_max + 0.5
+
+        if T <= lower_limit or T >= higher_limit:
+            return -1.0
+        elif T >= T_min and T <= T_max:
+            return 0.0 #reward is now 0 in the range.
+        elif T < T_min:
+            return -(T - T_min) / (lower_limit - T_min)
+        else:
+            return -(T - T_max) / (higher_limit - T_max)
 
     def _get_temperature_violation(self, obs_dict: Dict[str, Any]) -> Tuple[float, List[float]]:
         """
@@ -170,17 +205,11 @@ class CO2andTemperatureReward(LinearReward):
         person_count = obs_dict['people_occupant']
         total_reward = 0
         for T in temp_values:
-            if person_count == 0:
-                # If no one is in the room, ignore the comfort violation
-                break
-            if T >= temp_range[0] and T <= temp_range[1]:
-                # Inside comfort limits, add reward
-                total_reward += 1
-            else:
-                # Outside comfort limits, add penalty
+            reward = self.temperature_comfort_reward(T, T_min=temp_range[0], T_max=temp_range[1], people_count=person_count)
+            total_reward += reward
+
+            if person_count > 0 and reward < 0:
                 temp_violation = min(abs(temp_range[0] - T), abs(T - temp_range[1]))
-                total_reward -= 5*(1+temp_violation)
-                
                 temp_violations.append(temp_violation)
                 total_temp_violation += temp_violation
 
@@ -204,19 +233,22 @@ class CO2andTemperatureReward(LinearReward):
         reward = energy_term + co2_term + temperature_term
         self.energy_rew_arr.append(energy_term)
         self.co2_rew_arr.append(co2_term)
-
+        self.comfort_term_arr.append(temperature_term)
+        #print("E: ",energy_term," C: ",co2_term," T: ",temperature_term)
 
         # Increment daily timestep count
         self.daily_timestep_count += 1
-
+        
         # Log and reset at the end of the day
-        if self.daily_timestep_count == self.timesteps_per_day*9:
+        if self.daily_timestep_count == self.timesteps_per_day:
             avg_energy_reward = sum(self.energy_rew_arr) / len(self.energy_rew_arr)
             avg_co2_reward = sum(self.co2_rew_arr) / len(self.co2_rew_arr)
-            # print(f"Lambdas: Energy: {self.lambda_energy}, CO₂: {self.lambda_co2}")
-            # print(f"Energy Weight: {self.W_energy}")
+            avg_temperature_reward = sum(self.comfort_term_arr) / len(self.comfort_term_arr)
+
+            # print(f"WCO₂: {self.W_co2},WE {self.W_energy},WT: {self.W_temperature}")
             # print(f"Average Energy Reward for the Day: {avg_energy_reward}")
             # print(f"Average CO₂ Reward for the Day: {avg_co2_reward}")
+            # print(f"Average Temperature Reward for the Day: {avg_temperature_reward}")
 
             self.energy_rew_arr.clear()
             self.co2_rew_arr.clear()

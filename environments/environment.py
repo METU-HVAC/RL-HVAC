@@ -21,19 +21,19 @@ CO2_REWARD_CONFIG = {
     'ideal_co2': 700,
 }
 CO2_AND_TEMP_REWARD_CONFIG = {
-    'temperature_variables': ['air_temperature'],
-    'co2_variable': 'air_co2',
-    'energy_variables': ['total_electricity_HVAC'],
-    'range_comfort_winter': (20.0, 23.5),
-    'range_comfort_summer': (23.0, 26.0),
-    'energy_weight': 0.3,
-    'co2_weight': 0.3,
-    'temperature_weight': 0.3,
-    'lambda_energy': 1e-2,
-    'lambda_temperature': 1.0,
-    'lambda_co2': 1.0,
-    'co2_threshold': 700,
-}
+        'temperature_variables': ['air_temperature'],
+        'co2_variable': 'air_co2',
+        'energy_variables': ['total_electricity_HVAC', 'window_fan_energy'],
+        'range_comfort_winter': (20.0, 23.5),
+        'range_comfort_summer': (23.0, 26.0),
+        'energy_weight': 0.4,
+        'co2_weight': 0.3,
+        'temperature_weight': 0.3,
+        'lambda_energy': 1e-5,
+        'lambda_temperature': 1.0,
+        'lambda_co2': 1.0,
+        'co2_threshold': 800,
+    }
 
 # Helper to create a new environment with given start and end dates
 def create_environment(start_date, end_date, reward_fn,env_name='Eplus-A403v3-hot-discrete-v1', timesteps_per_hour=12, reward_kwargs=REWARD_CONFIG):

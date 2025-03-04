@@ -7,7 +7,6 @@ import random
 import os
 from sinergym.utils.constants import *
 from algorithms.dqn.dqn import *
-from algorithms.rbc.rbc import *
 from algorithms.onoff.on_off_controller import *
 from algorithms.setpoint.setpoint_controller import *
 from environments.reward import *
@@ -29,7 +28,7 @@ import pandas as pd
 # 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
 # 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
 ENV_NAME = "A403_V3"
-ALGORITHM_NAME = "INFO"
+ALGORITHM_NAME = "ON_OFF"
 NUM_EPISODES = 1
 
 raw_observations = []
@@ -37,7 +36,7 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
     env = create_environment(start_date, end_date,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
-    OFF_ACTION = 45 #initially the the system is not working
+    OFF_ACTION = 0 #initially the the system is not working
     state = append_fan_speed_to_observation(env,state,OFF_ACTION)
 
     data = state
@@ -125,7 +124,7 @@ def train(config=None):
 
         # Generate and split chunks
         chunks = generate_chunks(start_date, days_per_chunk, total_days)
-        train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.2, val_ratio=0.8, seed=seed)
+        train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
 
         num_episodes = NUM_EPISODES  # Total number of episodes (full sweeps through the dataset)  
         total_number_of_training_chunks = len(train_chunks)
@@ -134,17 +133,6 @@ def train(config=None):
         total_training_steps = total_number_of_training_chunks * num_episodes*steps_per_chunk
         total_testing_steps = total_number_of_test_chunks * num_episodes*steps_per_chunk
         current_training_step = 0
-        training_config = {
-            "batch_size": 64,
-            "gamma": 0.99,
-            "eps_start": 0.9,
-            "eps_end": 0.05,
-            "eps_decay": 5,
-            "tau": 0.005,
-            "lr": 1e-4,
-            "memory_capacity": 100000
-        }
-        
         reward_config = {
             'temperature_variables': ['air_temperature'],
             'co2_variable': 'air_co2',
@@ -160,7 +148,7 @@ def train(config=None):
             'co2_threshold': 800,
         }
         # Initialize the SP agent
-        agent = SetpointController()
+        agent = OnOffController()
         # Create the main experiment directory (only once)
         experiment_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         experiment_dir = os.path.join(plots_dir, f"experiment_{experiment_timestamp}")
@@ -217,7 +205,7 @@ def train(config=None):
                     pbar.set_postfix_str(f"Train Chunk {pbar.n + 1}/{len(train_chunks)}")
                     pbar.update(1)
                     current_training_step += 1
-
+                    break # No need to train
 
                 print(f"Loss for episode {episode}: {np.mean(total_loss_list)}")    
                 avg_train_reward = (train_total_reward / len(train_chunks)).item()
@@ -253,9 +241,6 @@ def train(config=None):
                                                                             reward_config)
                     
                     val_obs_dict = update_combined_dict(obs_dict, val_obs_dict)
-
-                    #Print the keys of the observation dictionary
-                    print("Keys of the observation dictionary:",obs_dict.keys())
                     
                     val_total_reward += reward
                     #KPI's
@@ -281,8 +266,7 @@ def train(config=None):
                     pbar.update(1)
                     
                 avg_val_reward = (val_total_reward / len(val_chunks)).item()
-                print("TRAIN POWER TOTAL LIST",train_total_power_list)
-                print("VAL POWER TOTAL LIST",val_total_power_list)
+
                 val_power_mean = np.mean(val_total_power_list)
                 val_power_std = np.std(val_total_power_list)
                 val_hvac_power_mean = np.mean(val_hvac_power_list)
@@ -294,11 +278,6 @@ def train(config=None):
                 val_co2_violation_mean = np.mean(val_co2_viol_percentage_list)
                 val_co2_violation_std = np.std(val_co2_viol_percentage_list)
 
-                means,stds = calculate_mean_and_std(val_obs_dict)
-                
-                print("Observation Statistics:")
-                print("Means:", means)
-                print("Standard Deviations:", stds)
                 
                 log_length = len(val_obs_dict['time_labels'])
                 #Power
@@ -348,37 +327,13 @@ def train(config=None):
                     }
                 )
 
-        # # Save data to CSV for visualization
-        # df = pd.DataFrame({
-        #     'Time': obs_dict['time_labels'],
-        #     'Outdoor_Temperature': obs_dict['outdoor_temps'],
-        #     'Heating_Setpoint': obs_dict['htg_setpoints'],
-        #     'Cooling_Setpoint': obs_dict['clg_setpoints'],
-        #     'Air_Temperature': obs_dict['air_temps'],
-        #     'Air_Humidity': obs_dict['air_humidities'],
-        #     'Power_Consumption': obs_dict['power_consumptions'],
-        #     'Fan_Speed': obs_dict['fan_speeds'],
-        #     'Temperature_Violation': obs_dict['total_temperature_violation'],
-        #     'CO2_Level': obs_dict['co2_levels'],
-        #     'People_Occupants': obs_dict['people_occupants']
-        # })
-
-
-        # # Save DataFrame to CSV
-        # file_path = os.path.join(experiment_dir, "on_off_data.csv")
-        # df.to_csv(file_path, index=False)
-
-        
-
-
-
 name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
 sweep_config = {
     'method': 'grid' ,
     'name' : name
     }
 metric = {
-    'name': 'avg_occupancy_co2_train',
+    'name': 'val_total_power_kwh_mean',
     'goal': 'minimize'   
     }
 parameters_dict = ({

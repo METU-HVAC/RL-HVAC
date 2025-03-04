@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import random
 
-def generate_chunks(start_date, days_per_chunk, total_days):
+def generate_chunks(start_date, days_per_chunk, total_days,step_size = 10):
     """
     Generate date-based chunks for a given period.
 
@@ -14,12 +14,40 @@ def generate_chunks(start_date, days_per_chunk, total_days):
         list of tuple: A list of (chunk_start, chunk_end) tuples.
     """
     chunks = []
-    for i in range(total_days // days_per_chunk):
-        chunk_start = start_date + timedelta(days=i * days_per_chunk)
+    num_chunks = (total_days - days_per_chunk) // step_size + 1  # Number of overlapping chunks
+
+    for i in range(num_chunks):
+        chunk_start = start_date + timedelta(days=i * step_size)
         chunk_end = chunk_start + timedelta(days=days_per_chunk - 1)
         chunks.append((chunk_start, chunk_end))
-    return chunks
 
+    return chunks
+# def split_chunks(chunks, train_ratio=0.6, val_ratio=0.3, seed=None):
+#     """
+#     Generate train chunks based on the train_ratio, and validation chunks as a subset of train chunks.
+
+#     Args:
+#         chunks (list of tuple): List of (chunk_start, chunk_end) tuples.
+#         train_ratio (float): Proportion of chunks to be used for training.
+#         val_ratio (float): Proportion of the training chunks to be used for validation.
+#         seed (int, optional): Seed for random shuffling to ensure reproducibility.
+
+#     Returns:
+#         tuple: Train chunks, validation chunks (subset of train), and the remaining test chunks.
+#     """
+#     if seed is not None:
+#         random.seed(seed)
+#     random.shuffle(chunks)
+
+#     train_size = int(train_ratio * len(chunks))
+#     train_chunks = chunks[:train_size]
+
+#     val_size = int(val_ratio * train_size)
+#     val_chunks = train_chunks[:val_size]
+
+#     test_chunks = chunks[train_size:]
+
+#     return train_chunks, val_chunks, test_chunks
 def split_chunks(chunks, train_ratio=0.7, val_ratio=0.1, seed=None):
     """
     Split chunks into train, validation, and test sets.

@@ -5,25 +5,31 @@ class SetpointController():
     is above 700 ppm and turns off the fan when the CO2 concentration is below 600 ppm.
     '''
     # mapping = {
-    # Summer actions 
-    #     20: [20, 23, 0.75, 0.0],
-    #     23: [20, 23, 0.75, 0.75],
+    # Winter actions 
+    #     28 : [22, 23, 0.75, 0.0],
+    #     30 : [22, 23, 0.75, 0.75],
+    
+        #4 : [20, 21, 0.75, 0.0],
+        #6 : [20, 21, 0.75, 0.75],
+    # Summer actions
+    #     40 : [23, 24, 0.75, 0.0],
+    #     42 : [23, 24, 0.75, 0.75],
+    
+        # 64 : [25, 26, 0.75, 0.0],
+        # 66 : [25, 26, 0.75, 0.75],
 
-    # Winter actions
-    #     35: [23, 26, 0.75, 0.0],
-    #     38: [23, 26, 0.75, 0.75],
-
-    #     45: OFF_ACTION  # Off action
+    #     72: [5,50,0.0,0.0],  # Off action
+    #     74: [5,50,0.0,0.75], Hvac off co2 on
     # }
     def __init__(self):
         self.is_co2_open = False
         self.is_hvac_open = False
-        self.summer_hvac_on_co2_off = 20
-        self.summer_hvac_on_co2_on = 23
-        self.winter_hvac_on_co2_off = 35
-        self.winter_hvac_on_co2_on = 38
-        self.hvac_off_co2_on = 48
-        self.off_action = 45
+        self.summer_hvac_on_co2_off = 4
+        self.summer_hvac_on_co2_on = 5
+        self.winter_hvac_on_co2_off = 0
+        self.winter_hvac_on_co2_on = 1
+        self.hvac_off_co2_on = 7
+        self.off_action = 6
         self.summer_limits = [23,26]
         self.winter_limits = [20,23.5]
 
@@ -31,14 +37,12 @@ class SetpointController():
         '''
         Act method for the controller
         '''
-        co2 = state[0][-2]
-        temp = state[0][9]
+        co2 = state[0][10]
+        temp = state[0][7]
+
+        month = state[0][0]
         
-        month_sin = state[0][0]
-        month_cos = state[0][1]
-        month = int((math.atan2(month_sin, month_cos) * 12 / (2 * math.pi)) % 12) + 1
-        
-        occupancy = state[0][11]
+        occupancy = state[0][9]
         # Determine season (summer or winter)
         is_summer = 6 <= month <= 9
         # Select seasonal limits based on the current season
@@ -65,9 +69,9 @@ class SetpointController():
             elif not self.is_cooling and temp >= upper_hysteresis:  # Heating complete
                 self.is_hvac_open = False
         # Handle CO2 Fan hysteresis
-        if co2 > 700:
+        if co2 > 800:
             self.is_co2_open = True
-        elif co2 < 600:
+        elif co2 < 700:
             self.is_co2_open = False
 
         if occupancy > 0:

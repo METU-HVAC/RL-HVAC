@@ -31,3 +31,11 @@ Then add your default json file to sinergym-env/lib/sinergym/data/default_config
 Also you need to add your custom discretization process into sinergym-env/lib/sinergym/utils/constants.py
 
 
+# SSH Screen
+
+screeen -S my_session
+ctrl+a d detach
+screen -r my_session
+
+screen -list 
+screein -r id

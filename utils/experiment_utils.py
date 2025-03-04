@@ -3,16 +3,204 @@ import math
 from datetime import datetime
 import numpy as np
 import torch
-obs_means =  [-1.88616163e-01 ,-2.57461701e-01 , 2.59861111e-01, -2.36515783e-05,
- -1.79738013e-04  ,2.37658727e+01  ,3.70050000e+01,  2.21512500e+01,
-  2.51512500e+01 , 2.34620032e+01 , 3.42801016e+01 , 1.71827337e+00,
-  7.50636800e+02 , 2.44119660e-01  ,1.02112024e+01 , 4.52476931e+02,
-  4.37303756e+05]
-obs_stds =  [5.76098289e-01 ,7.52494634e-01, 4.38558222e-01, 7.07073908e-01,
- 7.07139627e-01, 8.30790585e+00 ,2.19055985e+01 ,1.45889459e+00,
- 1.45889459e+00 ,1.74003051e+00 ,1.61345113e+01 ,1.99147147e+00,
- 6.55276029e+02 ,4.34552292e-01 ,5.27910243e+00 ,6.01012338e+01,
- 3.89152352e+05]
+import sinergym
+from sinergym.utils.constants import *
+import inflect
+
+def is_summer(month):
+    return 1.0 if 6 <= month <= 9 else 0.0  # 1.0 for summer, 0.0 for winter
+
+
+# {'month': np.float32(7.0), 'day_of_month': np.float32(10.0), 'hour': np.float32(0.0),
+#  'outdoor_temperature': np.float32(28.666666), 'outdoor_humidity': np.float32(36.666668), '
+# htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
+# 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
+# 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0) fan speed1 ,fan speed 2, summer flag}
+def reduce_state(state_tensor):
+    # Flatten the nested list
+    state_list = state_tensor.tolist()[0]  # Access the inner list
+
+    # Extract the month (first element)
+    month = state_list[0]
+
+    # Determine if it's summer
+    summer_flag = is_summer(month)
+
+    # Append the summer flag as the last element
+    state_with_season = state_list + [summer_flag]
+
+    # Select the required indices
+    indices = [3, 5, 7, 9, 10, 11, 12,13,14,len(state_with_season) - 1]
+    reduced_obs = [state_with_season[i] for i in indices]
+    
+    # Convert back to a tensor on the same device as the input
+    return torch.tensor(reduced_obs, dtype=state_tensor.dtype, device=state_tensor.device).unsqueeze(0)
+def calculate_mean_and_std(all_obs_dict):
+    means = []
+    stds = []
+    for key, values in all_obs_dict.items():
+        if key == 'time_labels':
+            # If 'time_labels' should be handled differently, you can log or process them separately
+            means.append(None)  # Placeholder for time_labels as it's not numeric
+            stds.append(None)  # Placeholder for time_labels as it's not numeric
+            continue  # Skip to the next key
+        means.append(np.mean(values))
+        stds.append(np.std(values))
+    return means,stds
+
+def pluralize_keys(obs_dict):
+    p = inflect.engine()
+    return {p.plural(key): value for key, value in obs_dict.items()}
+
+def update_combined_dict(all_obs_dict, combined_dict):
+    # Merge all_obs_dict into combined_dict
+    for key, value in all_obs_dict.items():
+        if key not in combined_dict:
+            combined_dict[key] = []
+        combined_dict[key].extend(value)
+    
+    return combined_dict
+def add_observation(all_obs_dict, obs_dict):
+    obs_dict = pluralize_keys(obs_dict)
+    for key, value in obs_dict.items():
+        if key not in all_obs_dict:
+            all_obs_dict[key] = []
+        all_obs_dict[key].append(value)
+    return all_obs_dict
+
+def append_info_and_time_to_dict(observation,info,current_step, timesteps_per_hour):
+    month, day,hour = int(observation['month']), int(observation['day_of_month']), int(observation['hour'])
+    minute = int((current_step % timesteps_per_hour) * (60 / timesteps_per_hour))
+    time_label = f"{month:02}-{day:02} {hour:02}:{minute:02}"
+
+    observation['temp_violation'] = info['is_comfort_violated']
+    observation['co2_violation'] = info['is_co2_violated']
+    observation['time_label'] = time_label
+    return observation
+
+def append_raw_action_to_dict(observation, raw_action):
+    observation['raw_action'] = raw_action
+    return observation
+def append_fan_speed_to_dict(observation, window_fan_speed, ac_fan_speed):
+
+    observation['window_fan_speed'] = np.float32(window_fan_speed)
+    observation['ac_fan_speed'] = np.float32(ac_fan_speed)
+    return observation
+
+def append_rewards_to_observation(env, observation, power_reward, temperature_reward, co2_reward):
+    # Convert observation to a dictionary
+    obs_dict = dict(zip(env.get_wrapper_attr('observation_variables'), observation))
+    
+    # Add reward components to the dictionary
+    obs_dict['power_reward'] =  np.float32(power_reward)
+    obs_dict['temperature_reward'] = np.float32(temperature_reward)
+    obs_dict['co2_reward'] = np.float32(co2_reward)
+
+    # Convert back to list format
+    observation_variables = env.get_wrapper_attr('observation_variables') + ['power_reward', 'temperature_reward', 'co2_reward']
+    observation = [obs_dict[var] for var in observation_variables]
+    
+    return observation
+
+def append_fan_speed_to_observation(env,observation,action):
+    obs_dict = dict(zip(env.get_wrapper_attr('observation_variables'), observation))
+    obs_dict = append_fan_speed_to_dict(obs_dict, DEFAULT_A403V3_DISCRETE_FUNCTION(action)[3], DEFAULT_A403V3_DISCRETE_FUNCTION(action)[2]) 
+    # Convert obs_dict back into data
+    observation_variables = env.get_wrapper_attr('observation_variables') + ['window_fan_speed', 'ac_fan_speed']
+    # Step 2: Extract the data values in the same order
+    observation = [obs_dict[var] for var in observation_variables]
+    return observation
+# Means: [np.float32(8.666667), np.float32(16.169794), np.float32(11.507992), np.float32(28.934195), np.float32(37.565823), 
+#         np.float32(24.0), np.float32(26.0), np.float32(26.5989), np.float32(39.966743), np.float32(3.105629), np.float32(521.407), np.float32(19820.014), 
+#         np.float32(261332.2), np.float64(0.39448691220755155), np.float64(0.1938846421125782), None, np.float32(0.7494788), np.float32(0.7494788)]
+# Standard Deviations: [np.float32(0.47140455), np.float32(5.3351545), np.float32(6.9179473), np.float32(5.099475), np.float32(16.559437),
+#                        np.float32(0.0), np.float32(0.0), np.float32(2.2118723), np.float32(12.816699), np.float32(3.6032803), np.float32(136.5423), 
+#                        np.float32(2086.485), np.float32(194333.78), np.float64(0.48874020532845774), np.float64(0.39533958524976426), 
+                    #    None, np.float32(0.019764235), np.float32(0.019764235)]
+                    
+# {'month': np.float32(7.0), 'day_of_month': np.float32(10.0), 'hour': np.float32(0.0),
+#  'outdoor_temperature': np.float32(28.666666), 'outdoor_humidity': np.float32(36.666668), '
+# htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
+# 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
+# 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
+
+obs_means = [np.float32(6.421548), np.float32(16.024471), np.float32(11.507992), np.float32(22.037941),
+        np.float32(34.10978), np.float32(14.389556), np.float32(35.018764), np.float32(22.971294),
+        np.float32(30.68262), np.float32(3.1064727), np.float32(587.5193), np.float32(5534.7583), 
+        np.float32(149596.14), np.float64(0.25218405638836494), np.float64(0.06706045865184156)]
+reduced_obs_means = [np.float32(22.037941),#outdoor temperature
+                        np.float32(22.971294),#air temperature
+                        np.float32(3.1064727),# people occupant
+                        np.float32(587.5193), # air co2
+                        np.float32(5534.7583), # window fan energy
+                        np.float32(149596.14), # total electricity HVAC
+                        np.float32(0), # is summer boolean
+                        np.float32(0), # reward terms
+                        np.float32(0), # reward terms
+                        np.float32(0) # reward terms
+                    ]
+
+reduced_obs_mins = [np.float32(-22.799999237060547),
+                    np.float32(5.0),    
+                    np.float32(-0.4748886525630951),
+                    np.float32(0.0),
+                    np.float32(400.0),
+                    np.float32(0.0),
+                    np.float32(0.0),
+                    np.float32(0.0),
+                    np.float32(0.0),
+                    np.float32(0.0),
+                    # np.float32(0.0),
+                    ]
+reduced_obs_maxs = [np.float32(42.0),
+                    np.float32(26.0), 
+                    np.float32(33.39998245239258),
+                    np.float32(10.0),
+                    np.float32(3000.0),
+                    np.float32(10125.0),
+                    np.float32(500000.0),
+                    np.float32(1.0),
+                    np.float32(1.0),
+                    np.float32(1.0),
+                    # np.float32(1.0),
+                    ]
+reduced_obs_stds = obs_stds = [ 
+                      np.float32(9.132451), 
+                      np.float32(4.2705617),
+                      np.float32(3.6196496), 
+                      np.float32(164.96347), 
+                      np.float32(8914.488), 
+                      np.float32(190947.97),
+                      np.float64(1),
+                      np.float64(1),
+                      np.float64(1),
+                      np.float64(1)]
+
+
+obs_stds = [np.float32(3.435255), np.float32(8.530136), np.float32(6.9179473), 
+                      np.float32(9.132451), np.float32(23.794716), np.float32(8.339892), 
+                      np.float32(13.180379), np.float32(4.2705617), np.float32(17.075714), 
+                      np.float32(3.6196496), np.float32(164.96347), np.float32(8914.488), 
+                      np.float32(190947.97), np.float64(0.43426634464562747), np.float64(0.2501266749813906)]
+# obs_means =  [-1.88616163e-01 ,-2.57461701e-01 , 2.59861111e-01, -2.36515783e-05,
+#  -1.79738013e-04  ,2.37658727e+01  ,3.70050000e+01,  2.21512500e+01,
+#   2.51512500e+01 , 2.34620032e+01 , 3.42801016e+01 , 1.71827337e+00,
+#   7.50636800e+02 , 2.44119660e-01  ,1.02112024e+01 , 4.52476931e+02,
+#   4.37303756e+05]
+# obs_stds =  [5.76098289e-01 ,7.52494634e-01, 4.38558222e-01, 7.07073908e-01,
+#  7.07139627e-01, 8.30790585e+00 ,2.19055985e+01 ,1.45889459e+00,
+#  1.45889459e+00 ,1.74003051e+00 ,1.61345113e+01 ,1.99147147e+00,
+#  6.55276029e+02 ,4.34552292e-01 ,5.27910243e+00 ,6.01012338e+01,
+#  3.89152352e+05]
+def min_max_normalize(obs, min_vals, max_vals):
+    if isinstance(obs, torch.Tensor):
+        # Move to CPU if needed and convert to NumPy
+        obs = obs.cpu().numpy()
+    obs = np.array(obs)  # Ensure observation is a numpy array
+    min_vals = np.array(min_vals)
+    max_vals = np.array(max_vals)
+    return (obs - min_vals) / (max_vals - min_vals + 1e-6)  # Avoid division by zero
+
 def normalize_observation(observation, means, stds):
     """
     Normalize a raw observation using the provided means and standard deviations.

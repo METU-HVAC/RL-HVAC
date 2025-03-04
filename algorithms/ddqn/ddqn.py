@@ -44,8 +44,9 @@ class DuelingDeepQNetwork(nn.Module):
         self.checkpoint_dir = chkpt_dir
         self.checkpoint_file = os.path.join(self.checkpoint_dir, name)
 
-        self.fc1 = nn.Linear(*input_dims, 512)
-        self.fc2 = nn.Linear(512, 256)
+        self.fc1 = nn.Linear(*input_dims, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, 256)
         self.V = nn.Linear(256, 1)
         self.A = nn.Linear(256, n_actions)
 
@@ -57,8 +58,9 @@ class DuelingDeepQNetwork(nn.Module):
     def forward(self, state):
         flat1 = F.relu(self.fc1(state))
         flat2 = F.relu(self.fc2(flat1))
-        V = self.V(flat2)
-        A = self.A(flat2)
+        flat3 = F.relu(self.fc3(flat2))
+        V = self.V(flat3)
+        A = self.A(flat3)
 
         return V, A
 

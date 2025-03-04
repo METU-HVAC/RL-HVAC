@@ -6,7 +6,7 @@ import torch.nn as nn
 from algorithms.dqn.network import DQN
 from algorithms.dqn.replay_buffer import ReplayMemory, Transition
 from configs.dqn_config import DQN_CONFIG
-
+from torch.optim.lr_scheduler import StepLR
 device = torch.device(
     "cuda" if torch.cuda.is_available() else
     "mps" if torch.backends.mps.is_available() else
@@ -20,7 +20,10 @@ class DQNAgent:
         self.target_net = DQN(n_observations, n_actions).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
-        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=config["lr"], amsgrad=True)
+        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=config["lr"],amsgrad=True)
+        #self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=total_training_steps/10, gamma=0.95)
+        # Initialize a learning rate scheduler (StepLR example)
+        self.scheduler = StepLR(self.optimizer, step_size=1, gamma=0.95)  # Reduce LR by 0.1 every epochs
         self.memory = ReplayMemory(config["memory_capacity"])
         self.steps_done = 0
         self.n_actions = n_actions
@@ -34,6 +37,9 @@ class DQNAgent:
         self.tau = config["tau"]
         self.total_training_steps = total_training_steps
         self.eps_threshold = 0
+        self.log_timestep = 0
+    def reduce_lr(self):
+        self.scheduler.step()
     def store_transition(self,state,action,next_state,reward):
         self.memory.push(state,action,next_state,reward)
     def select_action(self, state):
@@ -81,8 +87,23 @@ class DQNAgent:
 
         self.optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+        self.log_timestep += 1
+        # if self.log_timestep % 600 == 0:
+        #     # Log gradients for each parameter
+        #     for name, param in self.policy_net.named_parameters():
+        #         if param.grad is not None:
+        #             grad_norm = param.grad.norm().item()
+        #             print(f"Gradient norm for {name}: {grad_norm}")
+        #     # Log the learning rate
+        #     current_lr = self.scheduler.get_last_lr()[0]
+        #     print(f"Current Learning Rate: {current_lr}")
+
+        #     # Log epsilon value (exploration-exploitation)
+        #     print(f"Epsilon (exploration rate): {self.eps_threshold}")
+            
+        torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
         self.optimizer.step()
+        #self.scheduler.step()
 
         target_net_state_dict = self.target_net.state_dict()
         policy_net_state_dict = self.policy_net.state_dict()
