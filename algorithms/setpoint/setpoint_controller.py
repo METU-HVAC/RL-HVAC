@@ -21,15 +21,24 @@ class SetpointController():
     #     72: [5,50,0.0,0.0],  # Off action
     #     74: [5,50,0.0,0.75], Hvac off co2 on
     # }
+    
+    
+    # #SPEED CONTROL HVAC ONLY
+    # 10 : [21,23,1.0,0.0], winter hvac on co2 off
+    # 11 : [21,23,1.0,1.0], winter hvac on co2 on
+    # 16 : [23,26,1.0,0.0], summer hvac on co2 off
+    # 17 : [23,26,1.0,1.0], summer hvac on co2 on
+    # 18 : [5,50,0.0,0.0], all off
+    # 19 : [5,50,0.0,1.0] hvac off co2 on
     def __init__(self):
         self.is_co2_open = False
         self.is_hvac_open = False
-        self.summer_hvac_on_co2_off = 4
-        self.summer_hvac_on_co2_on = 5
-        self.winter_hvac_on_co2_off = 0
-        self.winter_hvac_on_co2_on = 1
-        self.hvac_off_co2_on = 7
-        self.off_action = 6
+        self.summer_hvac_on_co2_off = 16
+        self.summer_hvac_on_co2_on = 17
+        self.winter_hvac_on_co2_off = 10
+        self.winter_hvac_on_co2_on = 11
+        self.hvac_off_co2_on = 19
+        self.off_action = 18
         self.summer_limits = [23,26]
         self.winter_limits = [20,23.5]
 

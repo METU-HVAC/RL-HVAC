@@ -112,3 +112,10 @@ class DQNAgent:
         self.target_net.load_state_dict(target_net_state_dict)
         
         return loss.item()
+    def save_model(self, path):
+        torch.save(self.policy_net.state_dict(), path)
+    def load_model(self, path):
+        self.policy_net.load_state_dict(torch.load(path))
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.policy_net.eval()
+        self.target_net.eval()

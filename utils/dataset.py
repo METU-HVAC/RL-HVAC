@@ -1,25 +1,28 @@
 from datetime import datetime, timedelta
 import random
 
-def generate_chunks(start_date, days_per_chunk, total_days,step_size = 10):
+def generate_chunks(start_date, days_per_chunk, total_days, step_size=10, seasons=['mixed']):
     """
-    Generate date-based chunks for a given period.
+    Generate date-based chunks for a given period, with seasons.
 
     Args:
         start_date (datetime): The starting date for generating chunks.
         days_per_chunk (int): Number of days in each chunk.
         total_days (int): Total number of days to divide into chunks.
+        step_size (int): Step size for overlapping chunks.
+        seasons (list of str): List of seasons to generate chunks for.
 
     Returns:
-        list of tuple: A list of (chunk_start, chunk_end) tuples.
+        list of tuple: A list of (chunk_start, chunk_end, season) tuples.
     """
     chunks = []
-    num_chunks = (total_days - days_per_chunk) // step_size + 1  # Number of overlapping chunks
 
-    for i in range(num_chunks):
-        chunk_start = start_date + timedelta(days=i * step_size)
-        chunk_end = chunk_start + timedelta(days=days_per_chunk - 1)
-        chunks.append((chunk_start, chunk_end))
+    for season in seasons:
+        num_chunks = (total_days - days_per_chunk) // step_size + 1
+        for i in range(num_chunks):
+            chunk_start = start_date + timedelta(days=i * step_size)
+            chunk_end = chunk_start + timedelta(days=days_per_chunk - 1)
+            chunks.append((chunk_start, chunk_end, season))
 
     return chunks
 # def split_chunks(chunks, train_ratio=0.6, val_ratio=0.3, seed=None):

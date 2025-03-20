@@ -26,12 +26,13 @@ import pandas as pd
 # 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
 # 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
 ENV_NAME = "A403_V3"
-ALGORITHM_NAME = "DQN_ABL_TEMP_LIN1_CO2_LIN1"
+ALGORITHM_NAME = "DQN_PWR_CUT"
 NUM_EPISODES = 15
 
 raw_observations = []
+log_val_dict = []
 def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
-    env = create_environment(start_date, end_date,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
+    env = create_environment(start_date, end_date,season,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
     OFF_ACTION = 6 #initially the the system is not working
@@ -158,7 +159,7 @@ def train(config=None):
         }
 
         # Generate and split chunks
-        chunks = generate_chunks(start_date, days_per_chunk, total_days)
+        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=["hot"])
         train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2,seed=seed)
 
         num_episodes = NUM_EPISODES  # Total number of episodes (full sweeps through the dataset)  
@@ -293,6 +294,7 @@ def train(config=None):
                                                                             reward_config)
                     
                     val_obs_dict = update_combined_dict(obs_dict, val_obs_dict)
+                    append_observations(val_obs_dict,log_val_dict)
                     
                     val_total_reward += reward
                     #KPI's
@@ -317,7 +319,13 @@ def train(config=None):
 
                     pbar.set_postfix_str(f"val Chunk {pbar.n + 1}/{len(val_chunks)}")
                     pbar.update(1)
-                    
+                
+                model_name = "dqn_co2_{:.0f}_temp_{:.0f}_energy_{:.0f}_lr_{:.0e}".format(config.co2_weight,config.temp_weight,config.energy_weight,config.learning_rate)
+                save_observations_to_csv(log_val_dict, model_name,epoch=episode)
+                #Also save model with time
+                current_date_time = datetime.now().strftime("%Y%m%d_%H%M")
+                model_name = f"results/dqn/{model_name}_{current_date_time}"
+                #agent.save_model(model_name)    
                 avg_val_reward = (val_total_reward / len(val_chunks)).item()
 
                 val_power_mean = np.mean(val_total_power_list)
@@ -393,7 +401,8 @@ metric = {
     }
 parameters_dict = ({
     'learning_rate': {
-        'values': [1e-3,3e-4,1e-4]
+        'values': [3e-3]
+        #'values': [3e-3]
       },
     'lambda_energy': {
         'values': [1/300000]
@@ -402,10 +411,10 @@ parameters_dict = ({
         'values': [1]
       },
     'co2_weight': {
-        'values': [100,50]
+        'values': [50,25,10]
       },
     'temp_weight': {
-        'values': [100,50]
+        'values': [200,100,50]
       }
     })
 sweep_config['parameters'] = parameters_dict
@@ -413,7 +422,7 @@ sweep_config['metric'] = metric
 
 
 sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=12)
+wandb.agent(sweep_id, train, count=9)
 
 #Close the agent
 

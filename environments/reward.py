@@ -88,17 +88,17 @@ class CO2andTemperatureReward(LinearReward):
         # Energy penalty
         energy_consumed, energy_values = self._get_energy_consumed(obs_dict)
         energy_penalty = self._get_energy_penalty(energy_values)
-
+       
         # CO2 penalty
         co2_concentration = obs_dict[self.co2_variable]
-        co2_reward = self._get_co2_reward(co2_concentration)
+        co2_reward = self._get_co2_reward(co2_concentration,obs_dict['people_occupant'])
 
          # Comfort violation calculation
         temp_reward, temp_violations = self._get_temperature_violation(obs_dict)
 
         # Weighted sum of both terms
-        reward, energy_term ,co2_term,comfort_term = self._get_reward(energy_penalty, co2_reward, temp_reward)
-
+        reward, energy_term ,co2_term,comfort_term = self._get_reward(energy_penalty, co2_reward, temp_reward,obs_dict['people_occupant'])
+        
         reward_terms = {
             'energy_term': energy_term,
             'co2_term': co2_term,
@@ -117,24 +117,36 @@ class CO2andTemperatureReward(LinearReward):
             'is_occupied': obs_dict['people_occupant'] > 0
         }
         return reward, reward_terms
-    def _get_co2_reward(self, co2_concentration: float) -> float:
-        """
-        Calculates a reward based on CO2 levels.
-
-        Rewards +1 for CO2 <= 700 ppm, -1 for CO2 >= 900 ppm, and a linear
-        interpolation between these two points.
-
-        Args:
-            CO2 (float): The CO2 level in ppm.
-
-        Returns:
-            float: The reward value.
-        """
-        if co2_concentration <= 800:
-            return 0.0
+    
+    def step_co2_reward(self,co2, limit=800,min_reward = -1):
+        if co2 <= limit:
+            return 1
         else:
-            return -1.0
+            return min_reward
         
+    def linear_co2_reward(self,co2, limit=800, tolerance=200, min_reward=-1):
+        if co2 <= limit - tolerance:# 600
+            return 1
+        elif co2 >= limit + tolerance*2:#1200
+            return min_reward
+        else:
+            # Calculate slope based on the reward range and tolerance
+            slope = (1 - min_reward) / (2 * tolerance)
+            reward = 1 - slope * (co2 - (limit - tolerance))
+            return max(reward, min_reward)  # Clip to min_reward
+    def _get_co2_reward(self, co2_concentration: float,people_count) -> float:
+        if people_count == 0:
+            return 0
+        return self.linear_co2_reward(co2_concentration)
+    def linear_temp_reward(self,temp, low_limit=23, high_limit=26, tolerance=0.5,min_reward = -1):
+        if low_limit + tolerance < temp < high_limit - tolerance:
+            return 1
+        elif temp < low_limit + tolerance:   
+            return max((1/tolerance)*(temp - (low_limit+tolerance))+1, min_reward)
+        elif temp > high_limit - tolerance:
+            return max(-(1/tolerance)*(temp - (high_limit-tolerance))+1, min_reward)
+        else:
+            return 1  # on the limits
     def temperature_comfort_reward(self,T, T_min=23.0, T_max=26.0, people_count=1):
         """
         Calculates a reward based on temperature comfort.
@@ -156,18 +168,8 @@ class CO2andTemperatureReward(LinearReward):
         """
         if people_count == 0:
             return 0  # No occupants, temperature comfort is not relevant
+        return self.linear_temp_reward(T, T_min, T_max)
 
-        lower_limit = T_min - 0.5
-        higher_limit = T_max + 0.5
-
-        if T <= lower_limit or T >= higher_limit:
-            return -1.0
-        elif T >= T_min and T <= T_max:
-            return 0.0 #reward is now 0 in the range.
-        elif T < T_min:
-            return -(T - T_min) / (lower_limit - T_min)
-        else:
-            return -(T - T_max) / (higher_limit - T_max)
 
     def _get_temperature_violation(self, obs_dict: Dict[str, Any]) -> Tuple[float, List[float]]:
         """
@@ -214,7 +216,7 @@ class CO2andTemperatureReward(LinearReward):
                 total_temp_violation += temp_violation
 
         return total_reward, temp_violations
-    def _get_reward(self, energy_penalty: float, co2_penalty: float,temperature_penalty: float) -> Tuple[float, float, float,float]:
+    def _get_reward(self, energy_penalty: float, co2_penalty: float,temperature_penalty: float,occupancy: float) -> Tuple[float, float, float,float]:
         """
         Calculate the reward value using penalties for energy, CO2 and temperature.
 
@@ -228,6 +230,9 @@ class CO2andTemperatureReward(LinearReward):
         """
 
         energy_term = self.lambda_energy * self.W_energy * energy_penalty
+        if occupancy == 0 and energy_term < 0: # if there is no person in the room and energy is consumed, give a constant penalty
+            energy_term = -1.0
+        
         co2_term = self.lambda_co2 * self.W_co2 * co2_penalty
         temperature_term = self.lambda_temperature * self.W_temperature * temperature_penalty
         reward = energy_term + co2_term + temperature_term

@@ -6,11 +6,53 @@ import torch
 import sinergym
 from sinergym.utils.constants import *
 import inflect
-
+import csv
 def is_summer(month):
     return 1.0 if 6 <= month <= 9 else 0.0  # 1.0 for summer, 0.0 for winter
 
+# Example helper function to append observations
+def append_observations(obs_dict, global_obs_list):
+    """
+    Given an observation dictionary (where each key maps to a list of timestep values),
+    convert each timestep's data to a dictionary (row) and append to global_obs_list.
+    """
+    # Assume all lists in obs_dict are of the same length
+    current_date = datetime.now().strftime("%Y%m%d")
+    num_timesteps = len(next(iter(obs_dict.values())))
+    for i in range(num_timesteps):
+        row = {key: obs_dict[key][i] for key in obs_dict}
+        global_obs_list.append(row)
 
+def save_observations_to_csv(global_obs_list, model_name,epoch=None, directory="results/observations"):
+    """
+    Save the list of observation rows (dictionaries) to a CSV file.
+    The filename includes the epoch number and current date.
+    """
+    if not global_obs_list:
+        print("No observations to save.")
+        return
+
+    # Create the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+    
+    # Format the filename with epoch and date
+    current_datetime = datetime.now().strftime("%Y%m%d_%H%M")
+    if epoch is None:
+        filename = f"{directory}/{model_name}_{current_datetime}.csv"
+    else:
+        filename = f"{directory}/{model_name}_{epoch}_{current_datetime}.csv"
+    
+    # Use the keys of the first row as the header
+    headers = global_obs_list[0].keys()
+    
+    with open(filename, 'w', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(global_obs_list)
+        
+    print(f"Observations saved to {filename}")
+    # Clear the global observations list after saving
+    global_obs_list.clear()
 # {'month': np.float32(7.0), 'day_of_month': np.float32(10.0), 'hour': np.float32(0.0),
 #  'outdoor_temperature': np.float32(28.666666), 'outdoor_humidity': np.float32(36.666668), '
 # htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 

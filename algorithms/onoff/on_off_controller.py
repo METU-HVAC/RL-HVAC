@@ -30,15 +30,21 @@ class OnOffController():
         # 5 : [24,26,1.0,1.0],
         # 6 : [5,50,0.0,0.0],
         # 7 : [5,50,0.0,1.0],
-
+    # #SPEED CONTROL HVAC ONLY
+    # 10 : [21,23,1.0,0.0], winter hvac on co2 off
+    # 11 : [21,23,1.0,1.0], winter hvac on co2 on
+    # 16 : [23,26,1.0,0.0], summer hvac on co2 off
+    # 17 : [23,26,1.0,1.0], summer hvac on co2 on
+    # 18 : [5,50,0.0,0.0], all off
+    # 19 : [5,50,0.0,1.0] hvac off co2 on
     def __init__(self):
         self.is_open = False
-        self.summer_hvac_on_co2_off = 4
-        self.summer_hvac_on_co2_on = 5
-        self.winter_hvac_on_co2_off = 0
-        self.winter_hvac_on_co2_on = 1
+        self.summer_hvac_on_co2_off = 16
+        self.summer_hvac_on_co2_on = 17
+        self.winter_hvac_on_co2_off = 10
+        self.winter_hvac_on_co2_on = 11
 
-        self.off_action = 6
+        self.off_action = 18
         #Hvac on -off co2 on 
     def select_action(self, state):
         '''

@@ -20,3 +20,7 @@ plots/
 wandb/
 
 venv/
+#all files and directories in the results directory
+results/*
+
+figures/*

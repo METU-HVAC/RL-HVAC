@@ -36,22 +36,32 @@ CO2_AND_TEMP_REWARD_CONFIG = {
     }
 
 # Helper to create a new environment with given start and end dates
-def create_environment(start_date, end_date, reward_fn,env_name='Eplus-A403v3-hot-discrete-v1', timesteps_per_hour=12, reward_kwargs=REWARD_CONFIG):
+def create_environment(start_date, end_date,season, reward_fn, timesteps_per_hour=12, reward_kwargs=REWARD_CONFIG):
     """
-    Helper function to create a Gymnasium environment with specific configurations.
+    Helper function to create a Gymnasium environment with specific configurations, including season.
 
     Args:
-        
         start_date (datetime): Start date for the environment simulation.
         end_date (datetime): End date for the environment simulation.
         reward_fn (class): Custom reward class for the environment.
-        env_name (str): The name of the environment to create.
+        season (str): The season for selecting the environment (e.g., 'hot', 'cold', 'mixed').
         timesteps_per_hour (int): Number of timesteps per hour (default: 12 for 5-minute intervals).
         reward_kwargs (dict, optional): Additional parameters for the reward function.
 
     Returns:
         gym.Env: Configured Gymnasium environment instance.
     """
+    # Map season to environment names
+    season_env_mapping = {
+        'hot': 'Eplus-A403v3-hot-discrete-v1',
+        'cool': 'Eplus-A403v3-cool-discrete-v1',
+        'mixed': 'Eplus-A403v3-mixed-discrete-v1'
+    }
+
+    env_name = season_env_mapping.get(season.lower())
+    if not env_name:
+        raise ValueError(f"Invalid season: {season}. Must be one of {list(season_env_mapping.keys())}")
+
     extra_params = {
         'timesteps_per_hour': timesteps_per_hour,
         'runperiod': (
@@ -64,5 +74,5 @@ def create_environment(start_date, end_date, reward_fn,env_name='Eplus-A403v3-ho
                    reward=reward_fn,
                    reward_kwargs=reward_kwargs,
                    config_params=extra_params)
-    #env = DatetimeWrapper(env)
+    
     return env
