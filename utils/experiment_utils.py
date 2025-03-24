@@ -23,7 +23,7 @@ def append_observations(obs_dict, global_obs_list):
         row = {key: obs_dict[key][i] for key in obs_dict}
         global_obs_list.append(row)
 
-def save_observations_to_csv(global_obs_list, model_name,epoch=None, directory="results/observations"):
+def save_observations_to_csv(global_obs_list, model_name,epoch=None, directory="results/observations",save_with_date = False):
     """
     Save the list of observation rows (dictionaries) to a CSV file.
     The filename includes the epoch number and current date.
@@ -37,11 +37,16 @@ def save_observations_to_csv(global_obs_list, model_name,epoch=None, directory="
     
     # Format the filename with epoch and date
     current_datetime = datetime.now().strftime("%Y%m%d_%H%M")
-    if epoch is None:
-        filename = f"{directory}/{model_name}_{current_datetime}.csv"
+    if save_with_date:
+        if epoch is None:
+            filename = f"{directory}/{model_name}_{current_datetime}.csv"
+        else:
+            filename = f"{directory}/{model_name}_{epoch}_{current_datetime}.csv"
     else:
-        filename = f"{directory}/{model_name}_{epoch}_{current_datetime}.csv"
-    
+        if epoch is None:
+            filename = f"{directory}/{model_name}.csv"
+        else:
+            filename = f"{directory}/{model_name}_{epoch}.csv"
     # Use the keys of the first row as the header
     headers = global_obs_list[0].keys()
     
