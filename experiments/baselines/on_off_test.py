@@ -13,7 +13,7 @@ from environments.reward import *
 from environments.environment import CO2_AND_TEMP_REWARD_CONFIG
 import torch
 from sinergym.utils.wrappers import DatetimeWrapper
-
+import argparse
 from environments.environment import create_environment
 from utils.dataset import generate_chunks, split_chunks
 from utils.visualization import plot_and_save, plot_csv_data
@@ -27,13 +27,12 @@ import pandas as pd
 # htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
 # 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
 # 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
-ENV_NAME = "A403_V3"
-ALGORITHM_NAME = "ON_OFF"
-NUM_EPISODES = 1
+
 
 raw_observations = []
-def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
-    env = create_environment(start_date, end_date,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
+log_val_dict = []
+def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
+    env = create_environment(start_date, end_date,season,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
     OFF_ACTION = 0 #initially the the system is not working
@@ -111,7 +110,6 @@ def train(config=None):
         days_per_chunk = 10
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
-        num_episodes = 10  # Total episodes for training
         start_date = datetime(1997, 1, 1)
         days_per_chunk = 10
         total_days = 365
@@ -123,10 +121,11 @@ def train(config=None):
         }
 
         # Generate and split chunks
-        chunks = generate_chunks(start_date, days_per_chunk, total_days)
+        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=["hot"])
         train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
 
-        num_episodes = NUM_EPISODES  # Total number of episodes (full sweeps through the dataset)  
+        num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
+        experiment_save_dir = config.experiment_save_dir
         total_number_of_training_chunks = len(train_chunks)
         total_number_of_test_chunks = len(test_chunks)
 
@@ -241,7 +240,7 @@ def train(config=None):
                                                                             reward_config)
                     
                     val_obs_dict = update_combined_dict(obs_dict, val_obs_dict)
-                    
+                    append_observations(val_obs_dict,log_val_dict)
                     val_total_reward += reward
                     #KPI's
                     window_power = sum(obs_dict['window_fan_energies'])
@@ -264,6 +263,10 @@ def train(config=None):
 
                     pbar.set_postfix_str(f"val Chunk {pbar.n + 1}/{len(val_chunks)}")
                     pbar.update(1)
+                
+                    
+                #Save the dictionary to csv file
+                save_observations_to_csv(log_val_dict, "on_off")    
                     
                 avg_val_reward = (val_total_reward / len(val_chunks)).item()
 
@@ -307,6 +310,9 @@ def train(config=None):
                 wandb.log({"train_reward_mean":avg_train_reward},step=episode * log_length)
                 wandb.log({"val_reward_mean":avg_val_reward},step=episode * log_length)
 
+                #Save KPI's to csv file
+                
+                
                 # Temperature and Fan Speed plots
                 for timestep in range(log_length):
                     wandb.log({
@@ -327,6 +333,40 @@ def train(config=None):
                     }
                 )
 
+ENV_NAME = "A403_V3"
+ALGORITHM_NAME = "ON_OFF"
+NUM_EPISODES = 1
+SEASON = "mixed"
+# Set up command-line argument parsing.
+parser = argparse.ArgumentParser(
+    description="DQN Training Script for A403. Accepts room and season arguments."
+)
+parser.add_argument(
+    "--room",
+    type=str,
+    default=ENV_NAME,
+    help="Room identifier, e.g., 'A403_medium', 'A403_small', or 'v3' (default: is given inside script)"
+)
+parser.add_argument( 
+    "--season",
+    type=str,
+    default=SEASON,
+    help="Train season, e.g., 'mixed', 'cool', or 'hot' (default: is given inside script)"
+)
+args = parser.parse_args()
+room_name = args.room
+train_season = args.season
+ENV_NAME = f"A403_V3_{train_season}" 
+
+# Create experiment save dir
+current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")             
+unique_experiment_name = f"{train_season}_{room_name}_baseline_{current_date}"
+experiment_save_dir_name = "results/on_off/" + unique_experiment_name
+if not os.path.exists(experiment_save_dir_name):
+    os.makedirs(experiment_save_dir_name)
+    
+
+
 name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
 sweep_config = {
     'method': 'grid' ,
@@ -339,12 +379,21 @@ metric = {
 parameters_dict = ({
     'action': {
         'values': [1,2,3,4]
-      }
+      },
+    'train_season': {
+        'value': train_season
+    },
+    'num_episodes': {
+        'value': NUM_EPISODES
+    },
+    'experiment_save_dir': {
+        'value': experiment_save_dir_name
+    }  
     })
 sweep_config['parameters'] = parameters_dict
 sweep_config['metric'] = metric
 
-sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
+sweep_id = wandb.sweep(sweep_config, project="A403-Baseline",entity="mehmetbh")
 wandb.agent(sweep_id, train, count=1)
 
 #Close the agent

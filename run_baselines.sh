@@ -1,0 +1,28 @@
+#!/bin/bash
+# run_baselines.sh
+# This script runs baseline_test.py for multiple combinations of room, season, and algorithm.
+# It sets PYTHONPATH so that the 'algorithms' module is available.
+#
+# Usage: ./run_baselines.sh
+
+# Set the project root directory so that the "algorithms" module is found.
+export PYTHONPATH="/home/mehmetbh/workspace/RL-Paper:$PYTHONPATH"
+
+# Path to the Python interpreter and your test script.
+PYTHON="/home/mehmetbh/workspace/RL-Paper/venv/bin/python"
+SCRIPT="/home/mehmetbh/workspace/RL-Paper/experiments/baselines/baseline_test.py"
+
+# Define parameter lists.
+rooms=("A403_V3")
+seasons=("hot" "cool" "mixed")
+algorithms=("setpoint" "on_off")
+
+# Loop through each combination and run the test sequentially.
+for room in "${rooms[@]}"; do
+    for season in "${seasons[@]}"; do
+        for algo in "${algorithms[@]}"; do
+            echo "Running baseline_test.py with room: ${room}, season: ${season}, algorithm: ${algo}"
+            $PYTHON $SCRIPT --room "$room" --season "$season" --algorithm "$algo"
+        done
+    done
+done

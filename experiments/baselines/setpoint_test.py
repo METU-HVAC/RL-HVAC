@@ -32,8 +32,9 @@ ALGORITHM_NAME = "SETPOINT"
 NUM_EPISODES = 1
 
 raw_observations = []
-def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
-    env = create_environment(start_date, end_date,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
+log_val_dict = []
+def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
+    env = create_environment(start_date, end_date,season,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
     OFF_ACTION = 0 #initially the the system is not working
@@ -107,7 +108,7 @@ def train(config=None):
         state_size =  17 # Adjust based on the size of your observation space
         action_size = 37  
         train_interval = 100 # Train every n steps
-        timesteps_per_hour = 12  # 10-minute intervals
+        timesteps_per_hour = 6  # 10-minute intervals
         days_per_chunk = 10
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
@@ -123,7 +124,7 @@ def train(config=None):
         }
 
         # Generate and split chunks
-        chunks = generate_chunks(start_date, days_per_chunk, total_days)
+        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=["hot"])
         train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
 
         num_episodes = NUM_EPISODES  # Total number of episodes (full sweeps through the dataset)  
@@ -242,6 +243,8 @@ def train(config=None):
                                                                             reward_config)
                     
                     val_obs_dict = update_combined_dict(obs_dict, val_obs_dict)
+                    append_observations(val_obs_dict,log_val_dict)
+
                     
                     val_total_reward += reward
                     #KPI's
@@ -265,7 +268,12 @@ def train(config=None):
 
                     pbar.set_postfix_str(f"val Chunk {pbar.n + 1}/{len(val_chunks)}")
                     pbar.update(1)
+                #Save validation dictionary to CSV files.
+                #Create filename dir if not exits
+                
                     
+                #Save the dictionary to csv file
+                save_observations_to_csv(log_val_dict, "setpoint")    
                 avg_val_reward = (val_total_reward / len(val_chunks)).item()
 
                 val_power_mean = np.mean(val_total_power_list)

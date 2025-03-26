@@ -13,7 +13,7 @@ from environments.reward import *
 from environments.environment import CO2_AND_TEMP_REWARD_CONFIG
 import torch
 from sinergym.utils.wrappers import DatetimeWrapper
-
+import argparse
 from environments.environment import create_environment
 from utils.dataset import generate_chunks, split_chunks
 from utils.visualization import plot_and_save, plot_csv_data
@@ -27,9 +27,7 @@ import pandas as pd
 # htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
 # 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
 # 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
-ENV_NAME = "A403_V3"
-ALGORITHM_NAME = "ON_OFF_ABL"
-NUM_EPISODES = 1
+
 
 raw_observations = []
 log_val_dict = []
@@ -112,11 +110,10 @@ def train(config=None):
         days_per_chunk = 10
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
-        num_episodes = 10  # Total episodes for training
         start_date = datetime(1997, 1, 1)
         days_per_chunk = 10
         total_days = 365
-        plots_dir = "results/plots/setpoint"  # Directory to store plots
+        train_season = config.train_season
 
         extra_params = {
             'timesteps_per_hour': timesteps_per_hour,
@@ -124,10 +121,11 @@ def train(config=None):
         }
 
         # Generate and split chunks
-        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=["hot"])
+        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=[train_season])
         train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
 
-        num_episodes = NUM_EPISODES  # Total number of episodes (full sweeps through the dataset)  
+        num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
+        experiment_save_dir = config.experiment_save_dir
         total_number_of_training_chunks = len(train_chunks)
         total_number_of_test_chunks = len(test_chunks)
 
@@ -149,79 +147,19 @@ def train(config=None):
             'co2_threshold': 800,
         }
         # Initialize the SP agent
-        agent = OnOffController()
-        # Create the main experiment directory (only once)
-        experiment_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        experiment_dir = os.path.join(plots_dir, f"experiment_{experiment_timestamp}")
-        os.makedirs(experiment_dir, exist_ok=True)
+        agent_name = config.agent
+        if agent_name == "setpoint":
+            agent = SetpointController()
+        elif agent_name == "on_off":  
+            agent = OnOffController()
         
         for episode in range(1, num_episodes + 1):
-            with tqdm(total=len(train_chunks) + len(val_chunks), 
+            with tqdm(total=len(val_chunks), 
                     desc=f"Episode {episode}", 
                     ncols=120, 
                     unit="chunk", 
                     leave=True) as pbar:
-                # Shuffle train chunks at the start of every episode
-                random.shuffle(train_chunks)
-                # Training: Full sweep over the shuffled training dataset
-                train_total_reward = 0
-                train_total_power_list = []
-                train_hvac_power_list = []
-                train_fan_power_list = []
-                train_co2_viol_percentage_list = []
-                train_temp_viol_percentage_list = []
-                total_loss_list = []
-                train_obs_dict = {}
-                for train_chunk in train_chunks:
-                    obs_dict = {} 
-                    reward,loss,obs_dict = run_simulation(*train_chunk,
-                                                                            "Training", 
-                                                                            steps_per_chunk,
-                                                                            agent,
-                                                                            train_interval,
-                                                                            timesteps_per_hour,
-                                                                            reward_config)
-                    
-                    total_loss_list.append(loss)
-                    train_obs_dict = update_combined_dict(obs_dict, train_obs_dict)
-                    train_total_reward += reward
-                    #KPI's
-                    window_power = sum(obs_dict['window_fan_energies'])
-                    hvac_power = sum(obs_dict['total_electricity_HVACs'])
-                    total_power = window_power + hvac_power
-                    temp_viol_percentage = sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100
-                    co2_viol_percentage = sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
-
-                    # Power values are total joules for that timestep, which is 10 minutes(600sec) for now.
-                    # Covnert to kWh
-                    
-
-                    joules_to_kwh = 1 / 3600000
-                    train_total_power_list.append(total_power*joules_to_kwh)
-                    train_hvac_power_list.append(hvac_power*joules_to_kwh)
-                    train_fan_power_list.append(window_power*joules_to_kwh)
-                    train_co2_viol_percentage_list.append(co2_viol_percentage)
-                    train_temp_viol_percentage_list.append(temp_viol_percentage)
-
-                    pbar.set_postfix_str(f"Train Chunk {pbar.n + 1}/{len(train_chunks)}")
-                    pbar.update(1)
-                    current_training_step += 1
-                    break # No need to train
-
-                print(f"Loss for episode {episode}: {np.mean(total_loss_list)}")    
-                avg_train_reward = (train_total_reward / len(train_chunks)).item()
-
                 
-                train_power_mean = np.mean(train_total_power_list)
-                train_power_std = np.std(train_total_power_list)
-                train_hvac_power_mean = np.mean(train_hvac_power_list)
-                train_hvac_power_std = np.std(train_hvac_power_list)
-                train_fan_power_mean = np.mean(train_fan_power_list)
-                train_fan_power_std = np.std(train_fan_power_list)
-                train_temp_violation_mean = np.mean(train_temp_viol_percentage_list)
-                train_temp_violation_std = np.std(train_temp_viol_percentage_list)
-                train_co2_violation_mean = np.mean(train_co2_viol_percentage_list)
-                train_co2_violation_std = np.std(train_co2_viol_percentage_list)
             
                 # Validation: Full sweep over the shuffled validation dataset
                 val_total_reward = 0
@@ -250,7 +188,7 @@ def train(config=None):
                     total_power = window_power + hvac_power
                     temp_viol_percentage = sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100
                     co2_viol_percentage = sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
-
+                    joules_to_kwh = 1/3600000
                     val_total_power_list.append(total_power*joules_to_kwh)
                     val_hvac_power_list.append(hvac_power*joules_to_kwh)
                     val_fan_power_list.append(window_power*joules_to_kwh)
@@ -268,7 +206,7 @@ def train(config=None):
                 
                     
                 #Save the dictionary to csv file
-                save_observations_to_csv(log_val_dict, "on_off")    
+                save_observations_to_csv(log_val_dict, agent_name.lower(),directory=experiment_save_dir)  
                     
                 avg_val_reward = (val_total_reward / len(val_chunks)).item()
 
@@ -286,12 +224,7 @@ def train(config=None):
                 
                 log_length = len(val_obs_dict['time_labels'])
                 #Power
-                wandb.log({"train_total_power_kwh_mean": train_power_mean},step=episode * log_length)
-                wandb.log({"train_total_power_kwh_std": train_power_std},step=episode * log_length)
-                wandb.log({"train_hvac_power_kwh_mean": train_hvac_power_mean},step=episode * log_length)
-                wandb.log({"train_hvac_power_kwh_std": train_hvac_power_std},step=episode * log_length)
-                wandb.log({"train_fan_power_kwh_mean": train_fan_power_mean},step=episode * log_length)
-                wandb.log({"train_fan_power_kwh_std": train_fan_power_std},step=episode * log_length)
+                
                 wandb.log({"val_total_power_kwh_mean": val_power_mean},step=episode * log_length)
                 wandb.log({"val_total_power_kwh_std": val_power_std},step=episode * log_length)
                 wandb.log({"val_hvac_power_kwh_mean": val_hvac_power_mean},step=episode * log_length)
@@ -299,19 +232,25 @@ def train(config=None):
                 wandb.log({"val_fan_power_kwh_mean": val_fan_power_mean},step=episode * log_length)
                 wandb.log({"val_fan_power_kwh_std": val_fan_power_std},step=episode * log_length)
                 #CO2
-                wandb.log({"train_co2_violation_mean":train_co2_violation_mean},step=episode * log_length)
-                wandb.log({"train_co2_violation_std":train_co2_violation_std},step=episode * log_length)
+
                 wandb.log({"val_co2_violation_mean":val_co2_violation_mean},step=episode * log_length)
                 wandb.log({"val_co2_violation_std":val_co2_violation_std},step=episode * log_length)
                 #Temperature
-                wandb.log({"train_temp_violation_mean":train_temp_violation_mean},step=episode * log_length)
-                wandb.log({"train_temp_violation_std":train_temp_violation_std},step=episode * log_length)
+
                 wandb.log({"val_temp_violation_mean":val_temp_violation_mean},step=episode * log_length)
                 wandb.log({"val_temp_violation_std":val_temp_violation_std},step=episode * log_length)
                 #Reward
-                wandb.log({"train_reward_mean":avg_train_reward},step=episode * log_length)
+
                 wandb.log({"val_reward_mean":avg_val_reward},step=episode * log_length)
 
+                #Save KPI's to csv file
+                step_value = episode * log_length  # or any other step index you prefer
+                csv_file_path = config.csv_file_path
+                with open(csv_file_path, mode="a", newline="") as file:
+                    writer = csv.writer(file)
+                    # Write a row with the current KPIs.
+                    writer.writerow([step_value, val_temp_violation_mean, val_co2_violation_mean, val_power_mean])
+                
                 # Temperature and Fan Speed plots
                 for timestep in range(log_length):
                     wandb.log({
@@ -325,14 +264,63 @@ def train(config=None):
                 # Update progress bar to reflect final validation averages
                 pbar.set_postfix(
                     {
-                        "TrR": f"{avg_train_reward:.1f}",
                         "ValR":f"{avg_val_reward:.1f}",
-                        "AvgPwr":f"{train_power_mean:.1f}", 
-                        "AvgCo2OccConc": f"{np.mean(val_co2_violation_mean):.1f}",
+                        "AvgPwr":f"{val_power_mean:.1f}", 
+                        "AvgCo2OccConc": f"{val_co2_violation_mean:.1f}",
+                        "AvgTempOcc": f"{val_temp_violation_mean:.1f}"
                     }
                 )
 
-name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
+ENV_NAME = "A403_V3"
+ALGORITHM_NAME = "on_off" # setpoint
+NUM_EPISODES = 1
+SEASON = "hot"
+# Set up command-line argument parsing.
+parser = argparse.ArgumentParser(
+    description="DQN Training Script for A403. Accepts room and season arguments."
+)
+parser.add_argument(
+    "--room",
+    type=str,
+    default=ENV_NAME,
+    help="Room identifier, e.g., 'A403_medium', 'A403_small', or 'v3' (default: is given inside script)"
+)
+parser.add_argument( 
+    "--season",
+    type=str,
+    default=SEASON,
+    help="Train season, e.g., 'mixed', 'cool', or 'hot' (default: is given inside script)"
+)
+parser.add_argument(
+    "--algorithm",
+    type=str,
+    default=ALGORITHM_NAME,
+    help="Algorithm name, e.g., 'on_off' or 'setpoint' (default: is given inside script)"
+)
+args = parser.parse_args()
+room_name = args.room
+train_season = args.season
+algorithm_name = args.algorithm
+algorithm_name_upper = algorithm_name.upper()
+ENV_NAME = f"A403_V3_{train_season}" 
+
+# Create experiment save dir
+current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")             
+unique_experiment_name = f"{train_season}_{room_name}_baseline_{current_date}"
+experiment_save_dir_name = f"results/{algorithm_name}/{unique_experiment_name}" 
+if not os.path.exists(experiment_save_dir_name):
+    os.makedirs(experiment_save_dir_name)
+    
+# Determine the CSV file path (experiment_save_dir already defined earlier)
+csv_file_path = os.path.join(experiment_save_dir_name, "kpis.csv")    
+# If the CSV file doesn't exist, create it and write the header.
+if not os.path.exists(csv_file_path):
+    with open(csv_file_path, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        # Header row; you can adjust the header names if needed.
+        writer.writerow(["step", "val_temp_violation_mean", "val_co2_violation_mean", "val_total_power_kwh_mean"])
+
+name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=algorithm_name_upper)
 sweep_config = {
     'method': 'grid' ,
     'name' : name
@@ -344,12 +332,27 @@ metric = {
 parameters_dict = ({
     'action': {
         'values': [1,2,3,4]
-      }
-    })
+      },
+    'train_season': {
+        'value': train_season
+    },
+    'num_episodes': {
+        'value': NUM_EPISODES
+    },
+    'experiment_save_dir': {
+        'value': experiment_save_dir_name
+    },
+    'agent': {
+        'value': algorithm_name
+    },
+    'csv_file_path': {
+        'value': csv_file_path
+    }
+})
 sweep_config['parameters'] = parameters_dict
 sweep_config['metric'] = metric
 
-sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
+sweep_id = wandb.sweep(sweep_config, project="A403-Baseline",entity="mehmetbh")
 wandb.agent(sweep_id, train, count=1)
 
 #Close the agent
