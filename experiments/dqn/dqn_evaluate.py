@@ -127,7 +127,7 @@ def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,ag
         loss = 0
     return total_reward,loss,all_obs_dict
 
-def train(config=None):
+def evaluate(config=None):
     with wandb.init(config=config):
         config = wandb.config
         
@@ -149,16 +149,10 @@ def train(config=None):
         start_date = datetime(1997, 1, 1)
         days_per_chunk = 10
         total_days = 365
-        plots_dir = "results/plots/setpoint"  # Directory to store plots
-
-        extra_params = {
-            'timesteps_per_hour': timesteps_per_hour,
-            'runperiod':(1,1,1997,12,3,1997)  # Full year simulation
-        }
 
         # Generate and split chunks
-        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=[config.train_season])
-        train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.1, val_ratio=0.1,seed=seed)
+        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=[config.eval_season])
+        train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2,seed=seed)
 
         num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
         total_number_of_training_chunks = len(train_chunks)
@@ -202,74 +196,12 @@ def train(config=None):
         agent = DQNAgent(state_size, action_size,total_training_steps,training_config)
         
         for episode in range(1, num_episodes + 1):
-            with tqdm(total=len(train_chunks) + len(val_chunks), 
+            with tqdm(total=len(val_chunks), 
                     desc=f"Episode {episode}", 
                     ncols=120, 
                     unit="chunk", 
                     leave=True) as pbar:
-                # Shuffle train chunks at the start of every episode
-                random.shuffle(train_chunks)
-                # Training: Full sweep over the shuffled training dataset
-                train_total_reward = 0
-                train_total_power_list = []
-                train_hvac_power_list = []
-                train_fan_power_list = []
-                train_co2_viol_percentage_list = []
-                train_temp_viol_percentage_list = []
-                total_loss_list = []
-                train_obs_dict = {}
-                for train_chunk in train_chunks:
-                    obs_dict = {} 
-                    reward,loss,obs_dict = run_simulation(*train_chunk,
-                                                                            "Training", 
-                                                                            steps_per_chunk,
-                                                                            agent,
-                                                                            train_interval,
-                                                                            timesteps_per_hour,
-                                                                            reward_config)
-                    
-                    total_loss_list.append(loss)
-                    train_obs_dict = update_combined_dict(obs_dict, train_obs_dict)
-                    train_total_reward += reward
-                    #KPI's
-                    window_power = sum(obs_dict['window_fan_energies'])
-                    hvac_power = sum(obs_dict['total_electricity_HVACs'])
-                    total_power = window_power + hvac_power
-                    temp_viol_percentage = sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100
-                    co2_viol_percentage = sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
-
-                    # Power values are total joules for that timestep, which is 10 minutes(600sec) for now.
-                    # Covnert to kWh
-                    
-
-                    joules_to_kwh = 1 / 3600000
-                    train_total_power_list.append(total_power*joules_to_kwh)
-                    train_hvac_power_list.append(hvac_power*joules_to_kwh)
-                    train_fan_power_list.append(window_power*joules_to_kwh)
-                    train_co2_viol_percentage_list.append(co2_viol_percentage)
-                    train_temp_viol_percentage_list.append(temp_viol_percentage)
-
-                    pbar.set_postfix_str(f"Train Chunk {pbar.n + 1}/{len(train_chunks)}")
-                    pbar.update(1)
-                    current_training_step += 1
-
-                #An epoch has ended, step the scheduler
-                agent.reduce_lr()
-                print(f"Loss for episode {episode}: {np.mean(total_loss_list)}")    
-                avg_train_reward = (train_total_reward / len(train_chunks)).item()
-
                 
-                train_power_mean = np.mean(train_total_power_list)
-                train_power_std = np.std(train_total_power_list)
-                train_hvac_power_mean = np.mean(train_hvac_power_list)
-                train_hvac_power_std = np.std(train_hvac_power_list)
-                train_fan_power_mean = np.mean(train_fan_power_list)
-                train_fan_power_std = np.std(train_fan_power_list)
-                train_temp_violation_mean = np.mean(train_temp_viol_percentage_list)
-                train_temp_violation_std = np.std(train_temp_viol_percentage_list)
-                train_co2_violation_mean = np.mean(train_co2_viol_percentage_list)
-                train_co2_violation_std = np.std(train_co2_viol_percentage_list)
-            
                 # Validation: Full sweep over the shuffled validation dataset
                 val_total_reward = 0
                 val_total_power_list = []
@@ -278,6 +210,13 @@ def train(config=None):
                 val_co2_viol_percentage_list = []
                 val_temp_viol_percentage_list = []
                 val_obs_dict = {}
+                
+                # Load the model
+                
+                model_name = "dqn_co2_{:.0f}_temp_{:.0f}_energy_{:.0f}_lr_{:.0e}".format(config.co2_weight,config.temp_weight,config.energy_weight,config.learning_rate)
+                model_train_dir = f"{config.model_load_path}/{model_name}_ep{episode}.pth"
+                agent.load_model(model_train_dir)  # Assumes your DQNAgent has a method 'load' to load the model weights
+                
                 for val_chunk in val_chunks:
                     obs_dict = {}    
                     reward ,loss,obs_dict = run_simulation(*val_chunk,
@@ -299,6 +238,7 @@ def train(config=None):
                     temp_viol_percentage = sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100
                     co2_viol_percentage = sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
 
+                    joules_to_kwh = 1/3600000
                     val_total_power_list.append(total_power*joules_to_kwh)
                     val_hvac_power_list.append(hvac_power*joules_to_kwh)
                     val_fan_power_list.append(window_power*joules_to_kwh)
@@ -317,9 +257,7 @@ def train(config=None):
                 
                 model_name = "dqn_co2_{:.0f}_temp_{:.0f}_energy_{:.0f}_lr_{:.0e}".format(config.co2_weight,config.temp_weight,config.energy_weight,config.learning_rate)
                 save_observations_to_csv(log_val_dict, model_name,directory=experiment_save_dir,epoch=episode)
-                #Also save model with time
-                model_save_dir = f"{experiment_save_dir}/{model_name}_ep{episode}.pth"
-                agent.save_model(model_save_dir)    
+                 
                 avg_val_reward = (val_total_reward / len(val_chunks)).item()
 
                 val_power_mean = np.mean(val_total_power_list)
@@ -336,12 +274,6 @@ def train(config=None):
                 
                 log_length = len(val_obs_dict['time_labels'])
                 #Power
-                wandb.log({"train_total_power_kwh_mean": train_power_mean},step=episode * log_length)
-                wandb.log({"train_total_power_kwh_std": train_power_std},step=episode * log_length)
-                wandb.log({"train_hvac_power_kwh_mean": train_hvac_power_mean},step=episode * log_length)
-                wandb.log({"train_hvac_power_kwh_std": train_hvac_power_std},step=episode * log_length)
-                wandb.log({"train_fan_power_kwh_mean": train_fan_power_mean},step=episode * log_length)
-                wandb.log({"train_fan_power_kwh_std": train_fan_power_std},step=episode * log_length)
                 wandb.log({"val_total_power_kwh_mean": val_power_mean},step=episode * log_length)
                 wandb.log({"val_total_power_kwh_std": val_power_std},step=episode * log_length)
                 wandb.log({"val_hvac_power_kwh_mean": val_hvac_power_mean},step=episode * log_length)
@@ -349,17 +281,12 @@ def train(config=None):
                 wandb.log({"val_fan_power_kwh_mean": val_fan_power_mean},step=episode * log_length)
                 wandb.log({"val_fan_power_kwh_std": val_fan_power_std},step=episode * log_length)
                 #CO2
-                wandb.log({"train_co2_violation_mean":train_co2_violation_mean},step=episode * log_length)
-                wandb.log({"train_co2_violation_std":train_co2_violation_std},step=episode * log_length)
                 wandb.log({"val_co2_violation_mean":val_co2_violation_mean},step=episode * log_length)
                 wandb.log({"val_co2_violation_std":val_co2_violation_std},step=episode * log_length)
                 #Temperature
-                wandb.log({"train_temp_violation_mean":train_temp_violation_mean},step=episode * log_length)
-                wandb.log({"train_temp_violation_std":train_temp_violation_std},step=episode * log_length)
                 wandb.log({"val_temp_violation_mean":val_temp_violation_mean},step=episode * log_length)
                 wandb.log({"val_temp_violation_std":val_temp_violation_std},step=episode * log_length)
                 #Reward
-                wandb.log({"train_reward_mean":avg_train_reward},step=episode * log_length)
                 wandb.log({"val_reward_mean":avg_val_reward},step=episode * log_length)
 
                 # Temperature and Fan Speed plots
@@ -376,78 +303,65 @@ def train(config=None):
                 # Update progress bar to reflect final validation averages
                 pbar.set_postfix(
                     {
-                        "TrR": f"{avg_train_reward:.1f}",
                         "ValR":f"{avg_val_reward:.1f}",
                         "Pwr":f"{val_power_mean:.1f}", 
                         "CO2": f"{val_co2_violation_mean:.1f}",
                         "Temp": f"{val_temp_violation_mean:.1f}"
                     }
                 )
-# Create experiment save dir
+# Create eval experiment save dir
+ENV_NAME = "EVAL_A403_V3"
+ALGORITHM_NAME = "DQN"
+
+eval_season  = "cool"
 train_season = "hot"
 current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")
-room_name = "v3"               
-unique_experiment_name = f"{train_season}_{room_name}_train_{current_date}"
+unique_experiment_name = f"eval_{eval_season}_train_{train_season}_{current_date}"
 experiment_save_dir_name = "results/dqn/" + unique_experiment_name
 if not os.path.exists(experiment_save_dir_name):
     os.makedirs(experiment_save_dir_name)
 
+#Replace with experiment path that is used to train.
+model_load_path = "results/dqn/hot_v3_train_2025-03-25_02:04"
+config_file_path = os.path.join(model_load_path, "parameters_config.json")
+# Ensure the file exists
+if not os.path.exists(config_file_path):
+    raise FileNotFoundError(f"Training config file not found at {config_file_path}")
 
+# Load the training parameters from the JSON file
+with open(config_file_path, "r") as f:
+    training_params = json.load(f)
 
-ENV_NAME = "A403_V3"
-ALGORITHM_NAME = "EVAL_DQN"
-NUM_EPISODES = 4
+name= create_experiment_name(env_name=ENV_NAME, episodes=training_params['num_episodes']['value'],algorithm_name=ALGORITHM_NAME)
 
-name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
-sweep_config = {
-    'method': 'grid' ,
-    'name' : name
-    }
-metric = {
-    'name': 'val_total_power_kwh_mean',
-    'goal': 'minimize'   
-    }
-
+   
 parameters_dict = {
-    'learning_rate': {
-        'values': [3e-3]
-    },
-    'lambda_energy': {
-        'values': [1/300000]
-    },
-    'energy_weight': {
-        'values': [1]
-    },
-    'co2_weight': {
-        'values': [50, 25, 10]
-    },
-    'temp_weight': {
-        'values': [200]
-    },
-    'experiment_save_dir': {
-        'value': experiment_save_dir_name
-    },
-    'train_season': {
-        'value': train_season
-    },
-    'agent_count': {
-        'value': 3
-    },
-    'num_episodes': {
-        'value': NUM_EPISODES
-    }    
+    'learning_rate': training_params['learning_rate'],
+    'lambda_energy': training_params['lambda_energy'],
+    'energy_weight': training_params['energy_weight'],
+    'co2_weight': training_params['co2_weight'],
+    'temp_weight': training_params['temp_weight'],
+    # Add evaluation-specific parameters:
+    'model_load_path': {'value': model_load_path},
+    'experiment_save_dir': {'value': experiment_save_dir_name},
+    'eval_season': {'value': eval_season},
+    'agent_count':  training_params['agent_count'],
+    'num_episodes': training_params['num_episodes']
 }
-sweep_config['parameters'] = parameters_dict
-sweep_config['metric'] = metric
+
+sweep_config = {
+    'method': 'grid',
+    'name': name,
+    'parameters': parameters_dict,
+    'metric': {
+        'name': 'val_total_power_kwh_mean',
+        'goal': 'minimize'
+    }
+}
 
 
-config_save_path = os.path.join(experiment_save_dir_name, "parameters_config.json")
-with open(config_save_path, "w") as f:
-    json.dump(parameters_dict, f, indent=4)
-print(f"Parameters saved to {config_save_path}")
-
-sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=parameters_dict['agent_count']['value'])
+sweep_id = wandb.sweep(sweep_config, project="A403-Eval",entity="mehmetbh")
+wandb.agent(sweep_id, evaluate, count=parameters_dict['agent_count']['value'])
 
 #Close the agent
 

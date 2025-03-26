@@ -19,25 +19,25 @@ from utils.experiment_utils import *
 from tqdm import tqdm
 import wandb
 import pandas as pd
+import json
 ## OBSERVATION SPACE 
 # {'month': np.float32(7.0), 'day_of_month': np.float32(10.0), 'hour': np.float32(0.0),
 #  'outdoor_temperature': np.float32(28.666666), 'outdoor_humidity': np.float32(36.666668), '
 # htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
 # 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
 # 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
-ENV_NAME = "A403_V3"
-ALGORITHM_NAME = "DQN"
-NUM_EPISODES = 15
+
 
 raw_observations = []
-def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
-    env = create_environment(start_date, end_date,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
+log_val_dict = []
+def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
+    env = create_environment(start_date, end_date,season,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
-    OFF_ACTION = 45 #initially the the system is not working
+    OFF_ACTION = 6 #initially the the system is not working
     state = append_fan_speed_to_observation(env,state,OFF_ACTION)
+    #state = append_rewards_to_observation(env,state,0,0,0)
 
-    data = state
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     
     done = False
@@ -46,33 +46,48 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
     total_reward = 0
     loss_list = []
     all_obs_dict = {}
-    while current_step < steps_per_chunk:
+    
+    normalized_values = []  # Store normalized observations
 
-        normalized_obs = normalize_observation(state,obs_means,obs_stds)
-        normalized_obs = torch.tensor(normalized_obs, dtype=torch.float32, device=device)
-        print(normalized_obs)
+
+    while current_step < steps_per_chunk:
+        
+        reduced_state = reduce_state(state)
+        normalized_reduced_state = min_max_normalize(reduced_state,reduced_obs_mins,reduced_obs_maxs)
+        normalized_reduced_state = torch.tensor(normalized_reduced_state, dtype=torch.float32, device=device)
+        
+        # normalized_obs = normalize_observation(state,obs_means,obs_stds)
+        # normalized_obs = torch.tensor(normalized_obs, dtype=torch.float32, device=device)
+        normalized_values.append(normalized_reduced_state.cpu().numpy())  # Store values for analysis
         if episode_type == "Training":
-            action = agent.select_action(normalized_obs)  # Epsilon-greedy action for training
+            action = agent.select_action(normalized_reduced_state)  # Epsilon-greedy action for training
         else:
-            action = agent.choose_greedy_action(normalized_obs)  # Greedy action for validation/testing
+            action = agent.choose_greedy_action(normalized_reduced_state)  # Greedy action for validation/testing
 
         #np_action = np.array([action], dtype=np.float32)  # Adjust dtype to match environment
 
         observation, reward, truncated, terminated, info = env.step(action.item())
         observation = append_fan_speed_to_observation(env,observation,action.item())
-
+        #observation = append_rewards_to_observation(env,observation,info['energy_term'],info['comfort_term'],info['co2_term'])
         raw_observations.append(observation)
 
         #observation, reward, truncated, terminated, info = env.step(action.item())
-        data = observation
         done = terminated or truncated
         reward = torch.tensor([reward],dtype=torch.float32, device=device)
         
         next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
+        
         if episode_type == "Training":
-            normalized_next_obs = normalize_observation(next_state,obs_means,obs_stds)
-            normalized_next_obs = torch.tensor(normalized_next_obs, dtype=torch.float32, device=device)
-            agent.store_transition(normalized_obs, action, normalized_next_obs, reward)
+            # normalized_next_obs = normalize_observation(next_state,obs_means,obs_stds)
+            # normalized_next_obs = torch.tensor(normalized_next_obs, dtype=torch.float32, device=device)
+            
+            
+            next_reduced_state = reduce_state(next_state)
+            
+            normalized_next_reduced_obs = min_max_normalize(next_reduced_state,reduced_obs_mins,reduced_obs_maxs)
+            normalized_next_reduced_obs = torch.tensor(normalized_next_reduced_obs, dtype=torch.float32, device=device)
+            
+            agent.store_transition(normalized_reduced_state, action, normalized_next_reduced_obs, reward)
             # Train DQN every few steps if buffer size is sufficient
             if current_step % train_interval == 0:
                 # Perform one step of the optimization (on the policy network)
@@ -87,6 +102,7 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
         obs_dict = append_info_and_time_to_dict(obs_dict,info,current_step, timesteps_per_hour)
        
         obs_dict = append_fan_speed_to_dict(obs_dict, DEFAULT_A403V3_DISCRETE_FUNCTION(action.item())[3], DEFAULT_A403V3_DISCRETE_FUNCTION(action.item())[2])
+        obs_dict = append_raw_action_to_dict(obs_dict,action.item())
         all_obs_dict = add_observation(all_obs_dict, obs_dict)
         
         total_reward += reward
@@ -96,6 +112,14 @@ def run_simulation(start_date, end_date, episode_type, steps_per_chunk,agent,tra
 
         current_step += 1
     
+    # # After loop, analyze normalization
+    # normalized_values = np.array(normalized_values)
+    # mean = np.mean(normalized_values, axis=0)
+    # std = np.std(normalized_values, axis=0)
+
+    # print(f"Mean of normalized observations: {mean}")
+    # print(f"Standard deviation of normalized observations: {std}")
+
     env.close()  # Close the environment after use
     if len(loss_list) > 0:
         loss = sum(loss_list) / len(loss_list)
@@ -115,14 +139,13 @@ def train(config=None):
 
         remove_previous_run_logs()
                 
-        state_size =  15 # Adjust based on the size of your observation space
-        action_size = 76  
-        train_interval = 48 # Train every n steps
+        state_size =  10 # Adjust based on the size of your observation space
+        action_size = 20  
+        train_interval = 200 # Train every n steps
         timesteps_per_hour = 6  # 10-minute intervals
         days_per_chunk = 10
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
-        num_episodes = 10  # Total episodes for training
         start_date = datetime(1997, 1, 1)
         days_per_chunk = 10
         total_days = 365
@@ -134,10 +157,10 @@ def train(config=None):
         }
 
         # Generate and split chunks
-        chunks = generate_chunks(start_date, days_per_chunk, total_days)
+        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=[config.train_season])
         train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2,seed=seed)
 
-        num_episodes = NUM_EPISODES  # Total number of episodes (full sweeps through the dataset)  
+        num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
         total_number_of_training_chunks = len(train_chunks)
         total_number_of_test_chunks = len(test_chunks)
 
@@ -149,7 +172,9 @@ def train(config=None):
         energy_weight = config.energy_weight / total_weight
         co2_weight = config.co2_weight / total_weight
         temp_weight = config.temp_weight / total_weight
-        
+        lambda_energy = config.lambda_energy
+        learning_rate = config.learning_rate
+        experiment_save_dir = config.experiment_save_dir
         reward_config = {
             'temperature_variables': ['air_temperature'],
             'co2_variable': 'air_co2',
@@ -159,7 +184,7 @@ def train(config=None):
             'energy_weight': energy_weight,
             'co2_weight': co2_weight,
             'temperature_weight': temp_weight,
-            'lambda_energy': 1e-5,
+            'lambda_energy': lambda_energy, # 1/100.000
             'lambda_temperature': 1.0,
             'lambda_co2': 1.0,
             'co2_threshold': 800,
@@ -171,14 +196,10 @@ def train(config=None):
             "eps_end": 0.05,
             "eps_decay": 5,
             "tau": 0.005,
-            "lr":1e-4,
-            "memory_capacity": 100000
+            "lr":learning_rate,
+            "memory_capacity": 300000
         }
         agent = DQNAgent(state_size, action_size,total_training_steps,training_config)
-        # Create the main experiment directory (only once)
-        experiment_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        experiment_dir = os.path.join(plots_dir, f"experiment_{experiment_timestamp}")
-        os.makedirs(experiment_dir, exist_ok=True)
         
         for episode in range(1, num_episodes + 1):
             with tqdm(total=len(train_chunks) + len(val_chunks), 
@@ -232,7 +253,8 @@ def train(config=None):
                     pbar.update(1)
                     current_training_step += 1
 
-
+                #An epoch has ended, step the scheduler
+                agent.reduce_lr()
                 print(f"Loss for episode {episode}: {np.mean(total_loss_list)}")    
                 avg_train_reward = (train_total_reward / len(train_chunks)).item()
 
@@ -267,6 +289,7 @@ def train(config=None):
                                                                             reward_config)
                     
                     val_obs_dict = update_combined_dict(obs_dict, val_obs_dict)
+                    append_observations(val_obs_dict,log_val_dict)
                     
                     val_total_reward += reward
                     #KPI's
@@ -287,10 +310,16 @@ def train(config=None):
                     co2_levels = val_obs_dict['air_co2s']
                     window_fan_speeds = val_obs_dict['window_fan_speeds']
                     ac_fan_speeds = val_obs_dict['ac_fan_speeds']
+                    raw_actions = val_obs_dict['raw_actions']
 
                     pbar.set_postfix_str(f"val Chunk {pbar.n + 1}/{len(val_chunks)}")
                     pbar.update(1)
-                    
+                
+                model_name = "dqn_co2_{:.0f}_temp_{:.0f}_energy_{:.0f}_lr_{:.0e}".format(config.co2_weight,config.temp_weight,config.energy_weight,config.learning_rate)
+                save_observations_to_csv(log_val_dict, model_name,directory=experiment_save_dir,epoch=episode)
+                #Also save model with time
+                model_save_dir = f"{experiment_save_dir}/{model_name}_ep{episode}.pth"
+                agent.save_model(model_save_dir)    
                 avg_val_reward = (val_total_reward / len(val_chunks)).item()
 
                 val_power_mean = np.mean(val_total_power_list)
@@ -341,6 +370,7 @@ def train(config=None):
                         "val_co2_level_timestep": co2_levels[timestep],
                         "val_window_fan_speed_timestep": window_fan_speeds[timestep],
                         "val_ac_fan_speed_timestep": ac_fan_speeds[timestep],
+                        "val_raw_actions" : raw_actions[timestep] 
                     }, step=episode * len(inside_temp_levels) + timestep) 
                              
                 # Update progress bar to reflect final validation averages
@@ -353,6 +383,20 @@ def train(config=None):
                         "Temp": f"{val_temp_violation_mean:.1f}"
                     }
                 )
+# Create experiment save dir
+train_season = "mixed"
+current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")
+room_name = "v3"               
+unique_experiment_name = f"{train_season}_{room_name}_train_{current_date}"
+experiment_save_dir_name = "results/dqn/" + unique_experiment_name
+if not os.path.exists(experiment_save_dir_name):
+    os.makedirs(experiment_save_dir_name)
+
+
+
+ENV_NAME = f"A403_V3_{train_season}" 
+ALGORITHM_NAME = "DQN"
+NUM_EPISODES = 20
 
 name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
 sweep_config = {
@@ -363,23 +407,47 @@ metric = {
     'name': 'val_total_power_kwh_mean',
     'goal': 'minimize'   
     }
-parameters_dict = ({
+
+parameters_dict = {
+    'learning_rate': {
+        'values': [3e-4,1e-3,3e-3]
+    },
+    'lambda_energy': {
+        'values': [1/300000]
+    },
     'energy_weight': {
-        'values': [1,2,3,4]
-      },
-    'co2_weight': {
         'values': [1]
-      },
+    },
+    'co2_weight': {
+        'values': [100]
+    },
     'temp_weight': {
-        'values': [1,2,3,4]
-      }
-    })
+        'values': [200,100,50]
+    },
+    'experiment_save_dir': {
+        'value': experiment_save_dir_name
+    },
+    'train_season': {
+        'value': train_season
+    },
+    'agent_count': {
+        'value': 9
+    },
+    'num_episodes': {
+        'value': NUM_EPISODES
+    }    
+}
 sweep_config['parameters'] = parameters_dict
 sweep_config['metric'] = metric
 
 
+config_save_path = os.path.join(experiment_save_dir_name, "parameters_config.json")
+with open(config_save_path, "w") as f:
+    json.dump(parameters_dict, f, indent=4)
+print(f"Parameters saved to {config_save_path}")
+
 sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=16)
+wandb.agent(sweep_id, train, count=parameters_dict['agent_count']['value'])
 
 #Close the agent
 
