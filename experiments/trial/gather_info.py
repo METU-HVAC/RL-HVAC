@@ -7,14 +7,13 @@ import random
 import os
 from sinergym.utils.constants import *
 from algorithms.dqn.dqn import *
-from algorithms.rbc.rbc import *
 from algorithms.onoff.on_off_controller import *
 from algorithms.setpoint.setpoint_controller import *
 from environments.reward import *
 from environments.environment import CO2_AND_TEMP_REWARD_CONFIG
 import torch
 from sinergym.utils.wrappers import DatetimeWrapper
-from common.utils import *
+
 from environments.environment import create_environment
 from utils.dataset import generate_chunks, split_chunks
 from utils.visualization import plot_and_save, plot_csv_data

@@ -7,6 +7,14 @@ import sinergym
 from sinergym.utils.constants import *
 import inflect
 import csv
+import shutil
+
+def remove_previous_run_logs():
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in dirs:
+            if name.startswith("Eplus-env-"):
+                dir_path = os.path.join(root, name)
+                shutil.rmtree(dir_path)
 def is_summer(month):
     return 1.0 if 6 <= month <= 9 else 0.0  # 1.0 for summer, 0.0 for winter
 

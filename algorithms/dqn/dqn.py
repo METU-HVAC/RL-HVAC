@@ -5,13 +5,24 @@ import torch.optim as optim
 import torch.nn as nn
 from algorithms.dqn.network import DQN
 from algorithms.dqn.replay_buffer import ReplayMemory, Transition
-from configs.dqn_config import DQN_CONFIG
+
 from torch.optim.lr_scheduler import StepLR
 device = torch.device(
     "cuda" if torch.cuda.is_available() else
     "mps" if torch.backends.mps.is_available() else
     "cpu"
 )
+
+DQN_CONFIG = {
+    "batch_size": 64,
+    "gamma": 0.99,
+    "eps_start": 0.9,
+    "eps_end": 0.05,
+    "eps_decay": 5,
+    "tau": 0.005,
+    "lr": 1e-3,
+    "memory_capacity": 100000
+}
     
 class DQNAgent:
     
