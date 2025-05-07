@@ -9,13 +9,14 @@ from sinergym.utils.constants import *
 from algorithms.dqn.dqn import *
 from algorithms.onoff.on_off_controller import *
 from algorithms.setpoint.setpoint_controller import *
+from algorithms.classic_window.classic_window_controller import *
 from environments.reward import *
 from environments.environment import CO2_AND_TEMP_REWARD_CONFIG
 import torch
 from sinergym.utils.wrappers import DatetimeWrapper
 import argparse
 from environments.environment import create_environment
-from utils.dataset import generate_chunks, split_chunks
+from utils.dataset import *
 from utils.visualization import plot_and_save, plot_csv_data
 from utils.experiment_utils import *
 from tqdm import tqdm
@@ -31,8 +32,8 @@ import pandas as pd
 
 raw_observations = []
 log_val_dict = []
-def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
-    env = create_environment(start_date, end_date,season,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
+def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
+    env = create_environment(env_id,start_date, end_date,season,CO2andTemperatureReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
     OFF_ACTION = 0 #initially the the system is not working
@@ -47,13 +48,14 @@ def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,ag
     total_reward = 0
     loss_list = []
     all_obs_dict = {}
+    prev_month = None
+    prev_day = None
     while current_step < steps_per_chunk:
-
-        action = agent.select_action(state)
         
-
+        action = agent.select_action(state,current_step-1,timesteps_per_hour)
+        
         #np_action = np.array([action], dtype=np.float32)  # Adjust dtype to match environment
-
+        
         observation, reward, truncated, terminated, info = env.step(action)
         observation = append_fan_speed_to_observation(env,observation,action)
 
@@ -71,10 +73,19 @@ def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,ag
         state = next_state
 
         obs_dict = dict(zip(env.get_wrapper_attr('observation_variables'), observation))
+        
+        ##LOGGING FOR VALIDATION CHECK
+        current_month = obs_dict['month']
+        current_day = obs_dict['day_of_month']
+        outdoor_temp = obs_dict['outdoor_temperature']
+        if current_month != prev_month or current_day != prev_day:
+            print("Month:", current_month, "Day:", current_day, "Outdoor Temp:", outdoor_temp)
+            prev_month = current_month
+            prev_day = current_day
 
         obs_dict = append_info_and_time_to_dict(obs_dict,info,current_step, timesteps_per_hour)
        
-        obs_dict = append_fan_speed_to_dict(obs_dict, DEFAULT_A403V3_DISCRETE_FUNCTION(action)[3], DEFAULT_A403V3_DISCRETE_FUNCTION(action)[2])
+        obs_dict = append_fan_speed_to_dict(obs_dict, DEFAULT_A403MEDIUMWINDOW_DISCRETE_FUNCTION(action)[3], DEFAULT_A403MEDIUMWINDOW_DISCRETE_FUNCTION(action)[2])
         all_obs_dict = add_observation(all_obs_dict, obs_dict)
         
         total_reward += reward
@@ -104,7 +115,7 @@ def train(config=None):
         remove_previous_run_logs()
                 
         state_size =  17 # Adjust based on the size of your observation space
-        action_size = 37  
+        action_size = 20  
         train_interval = 100 # Train every n steps
         timesteps_per_hour = 6  # 10-minute intervals
         days_per_chunk = 10
@@ -119,11 +130,11 @@ def train(config=None):
             'timesteps_per_hour': timesteps_per_hour,
             'runperiod':(1,1,1997,12,3,1997)  # Full year simulation
         }
-
+        env_id = config.env_id
         # Generate and split chunks
         chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=[train_season])
-        train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
-
+        #train_chunks, val_chunks, test_chunks = stratified_train_val_split(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
+        train_chunks, val_chunks, test_chunks = balanced_month_sample(chunks, val_chunks_per_month=1, seed=seed)
         num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
         experiment_save_dir = config.experiment_save_dir
         total_number_of_training_chunks = len(train_chunks)
@@ -146,12 +157,26 @@ def train(config=None):
             'lambda_co2': 1.0,
             'co2_threshold': 800,
         }
-        # Initialize the SP agent
+
         agent_name = config.agent
-        if agent_name == "setpoint":
-            agent = SetpointController()
-        elif agent_name == "on_off":  
-            agent = OnOffController()
+        if agent_name == "setpoint05":
+            agent = SetpointController(window_fan_speed=0.5)
+        elif agent_name == "setpoint075":
+            agent = SetpointController(window_fan_speed=0.75)
+        elif agent_name == "setpoint1":
+            agent = SetpointController(window_fan_speed=1.0)
+        elif agent_name == "multispeed_setpoint":
+            agent = MultiSpeedSetpointController()
+        elif agent_name == "on_off05":  
+            agent = OnOffController(window_fan_speed=0.5)
+        elif agent_name == "on_off075":
+            agent = OnOffController(window_fan_speed=0.75)
+        elif agent_name == "on_off1":
+            agent = OnOffController(window_fan_speed=1.0)
+        elif agent_name == "window_on_off":
+            agent = WindowOnOffController()
+        elif agent_name == "window_schedule":
+            agent = WindowScheduleController()    
         
         for episode in range(1, num_episodes + 1):
             with tqdm(total=len(val_chunks), 
@@ -171,7 +196,7 @@ def train(config=None):
                 val_obs_dict = {}
                 for val_chunk in val_chunks:
                     obs_dict = {}    
-                    reward ,loss,obs_dict = run_simulation(*val_chunk,
+                    reward ,loss,obs_dict = run_simulation(env_id,*val_chunk,
                                                                             "Validation", 
                                                                             steps_per_chunk,
                                                                             agent,
@@ -186,8 +211,13 @@ def train(config=None):
                     window_power = sum(obs_dict['window_fan_energies'])
                     hvac_power = sum(obs_dict['total_electricity_HVACs'])
                     total_power = window_power + hvac_power
-                    temp_viol_percentage = sum(obs_dict['temp_violations'])/len(obs_dict['temp_violations'])*100
-                    co2_viol_percentage = sum(obs_dict['co2_violations'])/len(obs_dict['co2_violations'])*100
+                    
+                    temp_violations = [v for v in obs_dict['temp_violations'] if v is not None]
+                    co2_violations = [v for v in obs_dict['co2_violations'] if v is not None]
+                    
+                    temp_viol_percentage = sum(temp_violations)/len(temp_violations)*100 if temp_violations else 0
+                    co2_viol_percentage = sum(co2_violations)/len(co2_violations)*100 if co2_violations else 0
+                    
                     joules_to_kwh = 1/3600000
                     val_total_power_list.append(total_power*joules_to_kwh)
                     val_hvac_power_list.append(hvac_power*joules_to_kwh)
@@ -200,7 +230,8 @@ def train(config=None):
                     co2_levels = val_obs_dict['air_co2s']
                     window_fan_speeds = val_obs_dict['window_fan_speeds']
                     ac_fan_speeds = val_obs_dict['ac_fan_speeds']
-
+                    raw_temp_deviations = val_obs_dict['temp_deviations']
+                    raw_co2_deviations = val_obs_dict['co2_deviations']
                     pbar.set_postfix_str(f"val Chunk {pbar.n + 1}/{len(val_chunks)}")
                     pbar.update(1)
                 
@@ -221,7 +252,18 @@ def train(config=None):
                 val_co2_violation_mean = np.mean(val_co2_viol_percentage_list)
                 val_co2_violation_std = np.std(val_co2_viol_percentage_list)
 
-                
+                temp_deviations = [v for v in val_obs_dict['temp_deviations'] if v is not None]
+                co2_deviations = [v for v in val_obs_dict['co2_deviations'] if v is not None]
+
+                val_temp_deviation_min = np.min(temp_deviations) if temp_deviations else None
+                val_temp_deviation_max = np.max(temp_deviations) if temp_deviations else None
+                val_temp_deviation_mean = np.mean(temp_deviations) if temp_deviations else None
+                val_temp_deviation_std = np.std(temp_deviations) if temp_deviations else None
+
+                val_co2_deviation_min = np.min(co2_deviations) if co2_deviations else None
+                val_co2_deviation_max = np.max(co2_deviations) if co2_deviations else None
+                val_co2_deviation_mean = np.mean(co2_deviations) if co2_deviations else None
+                val_co2_deviation_std = np.std(co2_deviations) if co2_deviations else None
                 log_length = len(val_obs_dict['time_labels'])
                 #Power
                 
@@ -235,10 +277,20 @@ def train(config=None):
 
                 wandb.log({"val_co2_violation_mean":val_co2_violation_mean},step=episode * log_length)
                 wandb.log({"val_co2_violation_std":val_co2_violation_std},step=episode * log_length)
+                
+                wandb.log({"val_co2_deviation_mean":val_co2_deviation_mean},step=episode * log_length)
+                wandb.log({"val_co2_deviation_std":val_co2_deviation_std},step=episode * log_length)
+                wandb.log({"val_co2_deviation_min":val_co2_deviation_min},step=episode * log_length)
+                wandb.log({"val_co2_deviation_max":val_co2_deviation_max},step=episode * log_length)
                 #Temperature
 
                 wandb.log({"val_temp_violation_mean":val_temp_violation_mean},step=episode * log_length)
                 wandb.log({"val_temp_violation_std":val_temp_violation_std},step=episode * log_length)
+                
+                wandb.log({"val_temp_deviation_mean":val_temp_deviation_mean},step=episode * log_length)
+                wandb.log({"val_temp_deviation_std":val_temp_deviation_std},step=episode * log_length)
+                wandb.log({"val_temp_deviation_min":val_temp_deviation_min},step=episode * log_length)
+                wandb.log({"val_temp_deviation_max":val_temp_deviation_max},step=episode * log_length)
                 #Reward
 
                 wandb.log({"val_reward_mean":avg_val_reward},step=episode * log_length)
@@ -259,6 +311,8 @@ def train(config=None):
                         "val_co2_level_timestep": co2_levels[timestep],
                         "val_window_fan_speed_timestep": window_fan_speeds[timestep],
                         "val_ac_fan_speed_timestep": ac_fan_speeds[timestep],
+                        "val_temp_deviation_timestep": raw_temp_deviations[timestep] if raw_temp_deviations[timestep] is not None else 0,
+                        "val_co2_deviation_timestep": raw_co2_deviations[timestep] if raw_co2_deviations[timestep] is not None else 0,
                     }, step=episode * len(inside_temp_levels) + timestep) 
                              
                 # Update progress bar to reflect final validation averages
@@ -295,14 +349,14 @@ parser.add_argument(
     "--algorithm",
     type=str,
     default=ALGORITHM_NAME,
-    help="Algorithm name, e.g., 'on_off' or 'setpoint' (default: is given inside script)"
+    help="Algorithm name, e.g., 'on_off', 'setpoint' ,'window_on_off' or 'window_schedule' (default: is given inside script)"
 )
 args = parser.parse_args()
 room_name = args.room
 train_season = args.season
 algorithm_name = args.algorithm
 algorithm_name_upper = algorithm_name.upper()
-ENV_NAME = f"A403_V3_{train_season}" 
+ENV_NAME = f"{room_name}_{train_season}" 
 
 # Create experiment save dir
 current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")             
@@ -347,7 +401,9 @@ parameters_dict = ({
     },
     'csv_file_path': {
         'value': csv_file_path
-    }
+    },'env_id': {
+        'value': room_name
+    },
 })
 sweep_config['parameters'] = parameters_dict
 sweep_config['metric'] = metric

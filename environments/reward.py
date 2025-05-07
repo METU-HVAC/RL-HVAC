@@ -91,14 +91,15 @@ class CO2andTemperatureReward(LinearReward):
        
         # CO2 penalty
         co2_concentration = obs_dict[self.co2_variable]
-        co2_reward = self._get_co2_reward(co2_concentration,obs_dict['people_occupant'])
+        co2_reward = self._get_co2_reward(co2_concentration,obs_dict['people_occupant'],self.co2_threshold)
 
          # Comfort violation calculation
-        temp_reward, temp_violations = self._get_temperature_violation(obs_dict)
-
+        temp_reward, temp_deviation = self._get_temperature_violation(obs_dict)
+        is_occupied = obs_dict['people_occupant'] > 0
         # Weighted sum of both terms
         reward, energy_term ,co2_term,comfort_term = self._get_reward(energy_penalty, co2_reward, temp_reward,obs_dict['people_occupant'])
-        
+        co2_deviation = co2_concentration-self.co2_threshold if (co2_concentration > self.co2_threshold and is_occupied )else 0
+
         reward_terms = {
             'energy_term': energy_term,
             'co2_term': co2_term,
@@ -107,14 +108,14 @@ class CO2andTemperatureReward(LinearReward):
             'co2_weight': self.W_co2,
             'temperature_weight': self.W_temperature,
             'abs_energy_penalty': energy_penalty,
-            'abs_comfort_penalty': temp_violations,
-            'abs_co2_penalty': co2_reward,
+            'abs_comfort_penalty': temp_deviation if is_occupied else None,
+            'abs_co2_penalty': co2_deviation if is_occupied else None,
             'total_power_demand': energy_consumed,
             'total_temperature_violation': temp_reward,
             'co2_concentration': co2_concentration,
-            'is_co2_violated': obs_dict['people_occupant'] > 0 and co2_concentration > self.co2_threshold, 
-            'is_comfort_violated': obs_dict['people_occupant'] > 0 and temp_reward < 0,
-            'is_occupied': obs_dict['people_occupant'] > 0
+            'is_co2_violated': True if is_occupied and co2_deviation > 0 else False if is_occupied else None,
+            'is_comfort_violated': True if is_occupied and temp_deviation > 0 else False if is_occupied else None,
+            'is_occupied': is_occupied
         }
         return reward, reward_terms
     
@@ -134,10 +135,10 @@ class CO2andTemperatureReward(LinearReward):
             slope = (1 - min_reward) / (2 * tolerance)
             reward = 1 - slope * (co2 - (limit - tolerance))
             return max(reward, min_reward)  # Clip to min_reward
-    def _get_co2_reward(self, co2_concentration: float,people_count) -> float:
+    def _get_co2_reward(self, co2_concentration: float,people_count,co2_limit) -> float:
         if people_count == 0:
             return 0
-        return self.linear_co2_reward(co2_concentration)
+        return self.linear_co2_reward(co2_concentration,co2_limit)
     def linear_temp_reward(self,temp, low_limit=23, high_limit=26, tolerance=0.5,min_reward = -1):
         if low_limit + tolerance < temp < high_limit - tolerance:
             return 1
@@ -215,7 +216,7 @@ class CO2andTemperatureReward(LinearReward):
                 temp_violations.append(temp_violation)
                 total_temp_violation += temp_violation
 
-        return total_reward, temp_violations
+        return total_reward, total_temp_violation
     def _get_reward(self, energy_penalty: float, co2_penalty: float,temperature_penalty: float,occupancy: float) -> Tuple[float, float, float,float]:
         """
         Calculate the reward value using penalties for energy, CO2 and temperature.
@@ -260,130 +261,6 @@ class CO2andTemperatureReward(LinearReward):
             self.daily_timestep_count = 0
         
         return reward, energy_term, co2_term, temperature_term
-
-
-
-class CO2Reward(LinearReward):
-    def __init__(
-        self,
-        co2_variable: str,
-        energy_variables: List[str],
-        energy_weight: float = 0.3,
-        lambda_energy: float = 1e-2,
-        lambda_co2: float = 1.0,
-        ideal_co2: float = 700,
-    ):
-        """
-        Initialize the CO2Reward class.
-
-        Args:
-            co2_variable (str): Name of the CO2 concentration variable.
-            energy_variables (List[str]): Names of energy-related variables.
-            energy_weight (float): Weight for energy term in the reward.
-            lambda_energy (float): Scaling factor for energy penalty.
-            lambda_co2 (float): Scaling factor for CO2 penalty.
-            ideal_co2 (float): Ideal CO2 level (ppm).
-        """
-        super(LinearReward, self).__init__()
-        self.co2_variable = co2_variable
-        self.energy_names = energy_variables
-        self.W_energy = energy_weight
-        self.lambda_energy = lambda_energy
-        self.lambda_co2 = lambda_co2
-        self.ideal_co2 = ideal_co2
-        self.energy_rew_arr = []
-        self.co2_rew_arr = []
-        self.daily_timestep_count = 0
-        self.timesteps_per_day = 288
-
-
-    def __call__(self, obs_dict: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
-        """
-        Calculate the reward function.
-
-        Args:
-            obs_dict (Dict[str, Any]): Dict with observation variable name (key) and observation variable value (value).
-
-        Returns:
-            Tuple[float, Dict[str, Any]]: Reward value and dictionary with their individual components.
-        """
-        # Energy penalty
-        energy_consumed, energy_values = self._get_energy_consumed(obs_dict)
-        energy_penalty = self._get_energy_penalty(energy_values)
-
-        # CO2 penalty
-        co2_concentration = obs_dict[self.co2_variable]
-        co2_reward = self._get_co2_reward(co2_concentration)
-
-        # Weighted sum of terms
-        reward, energy_term, co2_term = self._get_reward(energy_penalty, co2_reward)
-
-        reward_terms = {
-            'energy_term': energy_term,
-            'co2_term': co2_term,
-            'reward_weight': self.W_energy,
-            'abs_energy_penalty': energy_penalty,
-            'abs_co2_penalty': co2_reward,
-            'total_power_demand': energy_consumed,
-            'co2_concentration': co2_concentration
-        }
-        
-        return reward, reward_terms
-
-    def _get_co2_reward(self, co2_concentration: float) -> float:
-        """
-        Calculate the penalty based on CO2 concentration.
-
-        Args:
-            co2_concentration (float): CO2 concentration in ppm.
-
-        Returns:
-            float: Negative absolute CO2 penalty.
-        """
-        
-        if co2_concentration < self.ideal_co2:
-            co2_reward = 1.0
-        else:
-            co2_reward = -20.0
-        
-        return co2_reward
-
-    def _get_reward(self, energy_penalty: float, co2_penalty: float) -> Tuple[float, float, float]:
-        """
-        Calculate the reward value using penalties for energy and CO2.
-
-        Args:
-            energy_penalty (float): Negative absolute energy penalty value.
-            co2_penalty (float): Negative absolute CO2 penalty value.
-
-        Returns:
-            Tuple[float, float, float]: Total reward, energy term, CO2 term.
-        """
-
-        energy_term = self.lambda_energy * self.W_energy * energy_penalty
-        co2_term = self.lambda_co2 * (1 - self.W_energy) * co2_penalty
-        reward = energy_term + co2_term
-        self.energy_rew_arr.append(energy_term)
-        self.co2_rew_arr.append(co2_term)
-
-
-        # Increment daily timestep count
-        self.daily_timestep_count += 1
-
-        # Log and reset at the end of the day
-        if self.daily_timestep_count == self.timesteps_per_day*9:
-            avg_energy_reward = sum(self.energy_rew_arr) / len(self.energy_rew_arr)
-            avg_co2_reward = sum(self.co2_rew_arr) / len(self.co2_rew_arr)
-            # print(f"Lambdas: Energy: {self.lambda_energy}, CO₂: {self.lambda_co2}")
-            # print(f"Energy Weight: {self.W_energy}")
-            # print(f"Average Energy Reward for the Day: {avg_energy_reward}")
-            # print(f"Average CO₂ Reward for the Day: {avg_co2_reward}")
-
-            self.energy_rew_arr.clear()
-            self.co2_rew_arr.clear()
-            self.daily_timestep_count = 0
-        
-        return reward, energy_term, co2_term
 class MyCustomReward(LinearReward):
     def __init__(
         self,

@@ -13,10 +13,11 @@ PYTHON="/home/mehmetbh/workspace/RL-Paper/venv/bin/python"
 SCRIPT="/home/mehmetbh/workspace/RL-Paper/experiments/baselines/baseline_test.py"
 
 # Define parameter lists.
-rooms=("A403_V3")
-seasons=("hot" "cool" "mixed")
-algorithms=("setpoint" "on_off")
-
+rooms=("A403medium")
+# seasons=("hot" "cool" "mixed")
+seasons=("hot")
+# algorithms=("setpoint" "on_off" "window_on_off" "window_schedule")
+algorithms=("setpoint1")
 # Loop through each combination and run the test sequentially.
 for room in "${rooms[@]}"; do
     for season in "${seasons[@]}"; do

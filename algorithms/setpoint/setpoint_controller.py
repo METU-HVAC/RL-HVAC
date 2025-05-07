@@ -4,45 +4,30 @@ class SetpointController():
     Setpoint controller for CO2 Fan is a hystreresis controller that turns on the fan on full speed when the CO2 concentration
     is above 700 ppm and turns off the fan when the CO2 concentration is below 600 ppm.
     '''
-    # mapping = {
-    # Winter actions 
-    #     28 : [22, 23, 0.75, 0.0],
-    #     30 : [22, 23, 0.75, 0.75],
-    
-        #4 : [20, 21, 0.75, 0.0],
-        #6 : [20, 21, 0.75, 0.75],
-    # Summer actions
-    #     40 : [23, 24, 0.75, 0.0],
-    #     42 : [23, 24, 0.75, 0.75],
-    
-        # 64 : [25, 26, 0.75, 0.0],
-        # 66 : [25, 26, 0.75, 0.75],
-
-    #     72: [5,50,0.0,0.0],  # Off action
-    #     74: [5,50,0.0,0.75], Hvac off co2 on
-    # }
-    
-    
-    # #SPEED CONTROL HVAC ONLY
-    # 10 : [21,23,1.0,0.0], winter hvac on co2 off
-    # 11 : [21,23,1.0,1.0], winter hvac on co2 on
-    # 16 : [23,26,1.0,0.0], summer hvac on co2 off
-    # 17 : [23,26,1.0,1.0], summer hvac on co2 on
-    # 18 : [5,50,0.0,0.0], all off
-    # 19 : [5,50,0.0,1.0] hvac off co2 on
-    def __init__(self):
+    def __init__(self,window_fan_speed=0.5):
         self.is_co2_open = False
         self.is_hvac_open = False
-        self.summer_hvac_on_co2_off = 16
-        self.summer_hvac_on_co2_on = 17
-        self.winter_hvac_on_co2_off = 10
-        self.winter_hvac_on_co2_on = 11
-        self.hvac_off_co2_on = 19
-        self.off_action = 18
+        self.winter_hvac_on_co2_off = 20
+        self.winter_hvac_on_co2_05 = 21
+        self.winter_hvac_on_co2_075 = 22
+        self.winter_hvac_on_co2_1 = 23
+        
+        self.summer_hvac_on_co2_off = 32
+        self.summer_hvac_on_co2_05 = 33
+        self.summer_hvac_on_co2_075 = 34
+        self.summer_hvac_on_co2_1 = 35
+        
+        self.hvac_off_co2_off = 36
+        self.hvac_off_co2_05 = 37 
+        self.hvac_off_co2_075 = 38  
+        self.hvac_off_co2_1 = 39
+         
         self.summer_limits = [23,26]
         self.winter_limits = [20,23.5]
+        
+        self.window_fan_speed = window_fan_speed
 
-    def select_action(self, state):
+    def select_action(self, state,current_step,timesteps_per_hour):
         '''
         Act method for the controller
         '''
@@ -85,10 +70,79 @@ class SetpointController():
 
         if occupancy > 0:
             if self.is_co2_open:
-                return self.summer_hvac_on_co2_on if is_summer else self.winter_hvac_on_co2_on
+                if self.window_fan_speed == 0.5:
+                    return self.summer_hvac_on_co2_05 if is_summer else self.winter_hvac_on_co2_05
+                elif self.window_fan_speed == 0.75:
+                    return self.summer_hvac_on_co2_075 if is_summer else self.winter_hvac_on_co2_075
+                elif self.window_fan_speed == 1.0:
+                    return self.summer_hvac_on_co2_1 if is_summer else self.winter_hvac_on_co2_1
+                else:
+                    print("Invalid window fan speed")
             else:
                 return self.summer_hvac_on_co2_off if is_summer else self.winter_hvac_on_co2_off
                 
         else:
             #If not in working hours, close everything
-            return self.off_action
+            return self.hvac_off_co2_off
+
+class MultiSpeedSetpointController():
+    def __init__(self):
+        self.is_co2_open = False
+        self.is_hvac_open = False
+        self.winter_hvac_on_co2_off = 20
+        self.winter_hvac_on_co2_05 = 21
+        self.winter_hvac_on_co2_075 = 22
+        self.winter_hvac_on_co2_1 = 23
+        
+        self.summer_hvac_on_co2_off = 32
+        self.summer_hvac_on_co2_05 = 33
+        self.summer_hvac_on_co2_075 = 34
+        self.summer_hvac_on_co2_1 = 35
+        
+        self.hvac_off_co2_off = 36
+        self.hvac_off_co2_05 = 37 
+        self.hvac_off_co2_075 = 38  
+        self.hvac_off_co2_1 = 39
+         
+        self.summer_limits = [23,26]
+        self.winter_limits = [20,23.5]
+        
+
+    def select_action(self, state,current_step,timesteps_per_hour):
+        '''
+        Act method for the controller
+        '''
+        co2 = state[0][10]
+        temp = state[0][7]
+
+        month = state[0][0]
+        
+        occupancy = state[0][9]
+        # Determine season (summer or winter)
+        is_summer = 6 <= month <= 9
+        # CO2-based fan speed control
+        if co2 > 800:
+            self.window_fan_speed = 1.0  # Full speed
+        elif 750 <= co2 <= 800:
+            self.window_fan_speed = 0.75  # High speed
+        elif 700 <= co2 < 750:
+            self.window_fan_speed = 0.5  # Low speed
+        else:
+            self.window_fan_speed = 0.0  # Off
+            
+        if occupancy > 0:
+            if self.window_fan_speed > 0:
+                if self.window_fan_speed == 0.5:
+                    return self.summer_hvac_on_co2_05 if is_summer else self.winter_hvac_on_co2_05
+                elif self.window_fan_speed == 0.75:
+                    return self.summer_hvac_on_co2_075 if is_summer else self.winter_hvac_on_co2_075
+                elif self.window_fan_speed == 1.0:
+                    return self.summer_hvac_on_co2_1 if is_summer else self.winter_hvac_on_co2_1
+                else:
+                    print("Invalid window fan speed")
+            else:
+                return self.summer_hvac_on_co2_off if is_summer else self.winter_hvac_on_co2_off
+                
+        else:
+            #If not in working hours, close everything
+            return self.hvac_off_co2_off

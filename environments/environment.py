@@ -36,7 +36,7 @@ CO2_AND_TEMP_REWARD_CONFIG = {
     }
 
 # Helper to create a new environment with given start and end dates
-def create_environment(start_date, end_date,season, reward_fn, timesteps_per_hour=12, reward_kwargs=REWARD_CONFIG):
+def create_environment(env_id,start_date, end_date,season, reward_fn,episode_type, timesteps_per_hour=12, reward_kwargs=REWARD_CONFIG):
     """
     Helper function to create a Gymnasium environment with specific configurations, including season.
 
@@ -51,12 +51,21 @@ def create_environment(start_date, end_date,season, reward_fn, timesteps_per_hou
     Returns:
         gym.Env: Configured Gymnasium environment instance.
     """
-    # Map season to environment names
-    season_env_mapping = {
-        'hot': 'Eplus-A403v3-hot-discrete-v1',
-        'cool': 'Eplus-A403v3-cool-discrete-v1',
-        'mixed': 'Eplus-A403v3-mixed-discrete-v1'
-    }
+    if episode_type == "Training":
+        season_env_mapping = {
+            'hot': f'Eplus-{env_id}-hot-discrete-stochastic-v1',
+            'cool': f'Eplus-{env_id}-cool-discrete-stochastic-v1',
+            'mixed': f'Eplus-{env_id}-mixed-discrete-stochastic-v1'
+        }
+    elif episode_type == "Validation":
+        
+        season_env_mapping = {
+            'hot': f'Eplus-{env_id}-hot-discrete-v1',
+            'cool': f'Eplus-{env_id}-cool-discrete-v1',
+            'mixed': f'Eplus-{env_id}-mixed-discrete-v1'
+        }
+    
+
 
     env_name = season_env_mapping.get(season.lower())
     if not env_name:

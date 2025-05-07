@@ -130,6 +130,8 @@ def append_info_and_time_to_dict(observation,info,current_step, timesteps_per_ho
 
     observation['temp_violation'] = info['is_comfort_violated']
     observation['co2_violation'] = info['is_co2_violated']
+    observation['temp_deviation'] = info['abs_comfort_penalty']
+    observation['co2_deviation'] = info['abs_co2_penalty']
     observation['time_label'] = time_label
     return observation
 

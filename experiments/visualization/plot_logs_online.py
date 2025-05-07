@@ -2,26 +2,31 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
-#streamlit run experiments/ablation/plot_logs_online.py
+#streamlit run experiments/visualization/plot_logs_online.py
 # Define dataset information
+
+# # Medium 
 # datasets_info = {
-#     "On-Off": {"csv": "results/observations/on_off_20250313.csv", "color": "blue"},
-#     "Setpoint": {"csv": "results/observations/setpoint_20250313.csv", "color": "green"},
-#     "DQN-LowTempViol": {"csv": "results/observations/dqn_co2_100_temp_100_energy_1_lr_3e-03_11_20250319_2320.csv", "color": "orange"},
-#     "DQN-LowPower": {"csv": "results/observations/dqn_co2_100_temp_100_energy_1_lr_3e-03_5_20250319_2308.csv", "color": "red"},
+#     "On-Off": {"csv": "results/on_off/mixed_A403medium_baseline_2025-04-10_01:36/on_off.csv", "color": "blue"},
+#     "Setpoint": {"csv": "results/setpoint/mixed_A403medium_baseline_2025-04-10_01:36/setpoint.csv", "color": "green"},
+#     "DQN-LowTempViol": {"csv": "results/dqn/mixed_A403medium_train_2025-04-10_01:42/dqn_co2_100_temp_50_energy_1_lr_3e-03_20.csv", "color": "orange"},
+#     "DQN-LowPower": {"csv": "results/dqn/mixed_A403medium_train_2025-04-10_01:42/dqn_co2_100_temp_100_energy_1_lr_1e-03_17.csv", "color": "red"},
+#     # "DQN-LowPower2": {"csv": "results/observations/dqn_co2_50_temp_100_energy_1_lr_3e-03_13_20250320_0242.csv", "color": "purple"},
 # }
+
+# Large 
 # datasets_info = {
-#     "On-Off": {"csv": "results/observations/on_off_20250313.csv", "color": "blue"},
-#     "Setpoint": {"csv": "results/observations/setpoint_20250313.csv", "color": "green"},
-#     "DQN-LowTempViol": {"csv": "results/observations/dqn_co2_50_temp_100_energy_1_lr_3e-03_12_20250320_0115.csv", "color": "orange"},
-#     "DQN-LowPower": {"csv": "results/observations/dqn_co2_50_temp_100_energy_1_lr_3e-03_5_20250320_0100.csv", "color": "red"},
+#     "On-Off": {"csv": "results/on_off/mixed_A403large_baseline_2025-04-10_01:39/on_off.csv", "color": "blue"},
+#     "Setpoint": {"csv": "results/setpoint/mixed_A403large_baseline_2025-04-10_01:39/setpoint.csv", "color": "green"},
+#     "DQN-LowTempViol": {"csv": "results/dqn/eval_mixed_A403large_train_mixed_A403medium_2025-04-10_11:56/dqn_co2_100_temp_200_energy_1_lr_3e-03_11.csv", "color": "orange"},
+#     "DQN-LowPower": {"csv": "results/dqn/eval_mixed_A403large_train_mixed_A403medium_2025-04-10_11:56/dqn_co2_100_temp_200_energy_1_lr_3e-04_8.csv", "color": "red"},
 # }
+
 datasets_info = {
-    "On-Off": {"csv": "results/observations/on_off_20250313.csv", "color": "blue"},
-    "Setpoint": {"csv": "results/observations/setpoint_20250313.csv", "color": "green"},
-    "DQN-LowTempViol": {"csv": "results/observations/dqn_co2_10_temp_100_energy_1_lr_3e-03_12_20250320_0546.csv", "color": "orange"},
-    "DQN-LowPower": {"csv": "results/observations/dqn_co2_50_temp_50_energy_1_lr_3e-03_5_20250320_0256.csv", "color": "red"},
-    "DQN-LowPower2": {"csv": "results/observations/dqn_co2_50_temp_100_energy_1_lr_3e-03_13_20250320_0242.csv", "color": "purple"},
+    "On-Off": {"csv": "results/on_off/mixed_A403medium_baseline_2025-04-17_13:43/on_off.csv", "color": "blue"},
+    "Setpoint": {"csv": "results/setpoint/mixed_A403medium_baseline_2025-04-17_13:43/setpoint.csv", "color": "green"},
+    "DQN-Switch": {"csv": "results/dqn/mixed_A403medium_train_2025-04-16_22:25/dqn_co2_100_temp_100_energy_1_lr_3e-03_10.csv", "color": "orange"},
+    "DQN-NoSwitch": {"csv": "results/dqn/mixed_A403medium_train_2025-04-17_08:41/dqn_co2_100_temp_100_energy_1_lr_3e-03_10.csv", "color": "red"},
 }
 dataset_labels = list(datasets_info.keys())
 
@@ -29,7 +34,7 @@ dataset_labels = list(datasets_info.keys())
 variables_to_plot = ["outdoor_temperatures", "outdoor_humidities", "htg_setpoints",
                      "clg_setpoints", "air_temperatures", "air_humidities", "people_occupants",
                      "air_co2s", "window_fan_energies", "total_electricity_HVACs", "temp_violations",
-                     "co2_violations", "window_fan_speeds", "ac_fan_speeds"]
+                     "co2_violations", "window_fan_speeds", "ac_fan_speeds","temp_deviations","co2_deviations"]
 
 # Sidebar configuration for index range
 st.sidebar.title("Plot Configuration")

@@ -30,8 +30,8 @@ import json
 
 raw_observations = []
 log_val_dict = []
-def run_simulation(start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
-    env = create_environment(start_date, end_date,season,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
+def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
+    env = create_environment(env_id,start_date, end_date,season,CO2andTemperatureReward,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
     OFF_ACTION = 6 #initially the the system is not working
@@ -169,6 +169,7 @@ def evaluate(config=None):
         lambda_energy = config.lambda_energy
         learning_rate = config.learning_rate
         experiment_save_dir = config.experiment_save_dir
+        env_id = config.env_id
         reward_config = {
             'temperature_variables': ['air_temperature'],
             'co2_variable': 'air_co2',
@@ -219,7 +220,7 @@ def evaluate(config=None):
                 
                 for val_chunk in val_chunks:
                     obs_dict = {}    
-                    reward ,loss,obs_dict = run_simulation(*val_chunk,
+                    reward ,loss,obs_dict = run_simulation(env_id,*val_chunk,
                                                                             "Validation", 
                                                                             steps_per_chunk,
                                                                             agent,
@@ -310,19 +311,24 @@ def evaluate(config=None):
                     }
                 )
 # Create eval experiment save dir
-ENV_NAME = "EVAL_A403_V3"
-ALGORITHM_NAME = "DQN"
 
-eval_season  = "cool"
-train_season = "hot"
+
+
+eval_season  = "mixed"
+train_season = "mixed"
+eval_env_id = "A403large"
+train_env_id = "A403medium"
+ENV_NAME = f"EVAL_{eval_env_id}"
+ALGORITHM_NAME = "DQN"
 current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")
-unique_experiment_name = f"eval_{eval_season}_train_{train_season}_{current_date}"
+unique_experiment_name = f"eval_{eval_season}_{eval_env_id}_train_{train_season}_{train_env_id}_{current_date}"
 experiment_save_dir_name = "results/dqn/" + unique_experiment_name
 if not os.path.exists(experiment_save_dir_name):
     os.makedirs(experiment_save_dir_name)
 
 #Replace with experiment path that is used to train.
-model_load_path = "results/dqn/hot_v3_train_2025-03-25_02:04"
+model_load_path = "results/dqn/mixed_A403medium_train_2025-04-10_01:42"
+
 config_file_path = os.path.join(model_load_path, "parameters_config.json")
 # Ensure the file exists
 if not os.path.exists(config_file_path):
@@ -346,7 +352,10 @@ parameters_dict = {
     'experiment_save_dir': {'value': experiment_save_dir_name},
     'eval_season': {'value': eval_season},
     'agent_count':  training_params['agent_count'],
-    'num_episodes': training_params['num_episodes']
+    'num_episodes': training_params['num_episodes'],
+    'env_id': {
+        'value': eval_env_id
+    }
 }
 
 sweep_config = {
