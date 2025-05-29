@@ -43,7 +43,7 @@ class ReplayBuffer:
         return {k: torch.as_tensor(v, device=self.device) for k, v in batch.items()}
     
     def __len__(self):
-        return len(self.buffer)
+        return self.size
     
     def serialize(self):
         """
@@ -79,11 +79,11 @@ class Actor(nn.Module):
     def __init__(self, obs_dim, action_dim):
         super(Actor, self).__init__()
         self.net = nn.Sequential(
-            nn.Linear(obs_dim, 256),    # Increased input layer size
+            nn.Linear(obs_dim, 128),    # Increased input layer size
             nn.ReLU(),                  # Changed activation function to ReLU for better nonlinearity
-            nn.Linear(256, 128),        # Added another hidden layer
+            nn.Linear(128, 64),        # Added another hidden layer
             nn.ReLU(),
-            nn.Linear(128, action_dim)  # Output layer
+            nn.Linear(64, action_dim)  # Output layer
         )
 
     def forward(self, x):
@@ -95,19 +95,19 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
         # Q1 architecture
         self.q1_net = nn.Sequential(
-            nn.Linear(obs_dim, 256),    # Increased input layer size
+            nn.Linear(obs_dim, 128),    # Increased input layer size
             nn.ReLU(),
-            nn.Linear(256, 128),        # Added another hidden layer
+            nn.Linear(128, 64),        # Added another hidden layer
             nn.ReLU(),
-            nn.Linear(128, action_dim)  # Output layer
+            nn.Linear(64, action_dim)  # Output layer
         )
         # Q2 architecture
         self.q2_net = nn.Sequential(
-            nn.Linear(obs_dim, 256),    # Increased input layer size
+            nn.Linear(obs_dim, 128),    # Increased input layer size
             nn.ReLU(),
-            nn.Linear(256, 128),        # Added another hidden layer
+            nn.Linear(128, 64),        # Added another hidden layer
             nn.ReLU(),
-            nn.Linear(128, action_dim)  # Output layer
+            nn.Linear(64, action_dim)  # Output layer
         )
 
     def forward(self, x):
@@ -170,9 +170,6 @@ class SACDiscrete(nn.Module):
         self.actor.load_state_dict(checkpoint["actor_state_dict"])
         self.critic.load_state_dict(checkpoint["critic_state_dict"])
         self.critic_target.load_state_dict(checkpoint["critic_target_state_dict"])
-        self.actor.apply(init_weights)
-        self.critic.apply(init_weights)
-        self.critic_target.apply(init_weights)
         self.replay_buffer.deserialize(checkpoint["replay_buffer"])  # Load replay buffer
         
         # Load optimizers
@@ -181,7 +178,7 @@ class SACDiscrete(nn.Module):
         self.alpha_optimizer.load_state_dict(checkpoint["alpha_optimizer_state_dict"])
         
         # Load alpha value
-        self.log_alpha = torch.tensor(checkpoint["log_alpha"], requires_grad=True, device=self.device)
+        self.log_alpha.data = torch.tensor(checkpoint["log_alpha"], device=self.device)
         
         # Reload hyperparameters if needed (optional)
         hyperparams = checkpoint["hyperparameters"]
@@ -287,4 +284,4 @@ class SACDiscrete(nn.Module):
                 for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
                     target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-            return actor_loss, critic_loss
+            return actor_loss.item(), critic_loss.item(), alpha_loss.item()

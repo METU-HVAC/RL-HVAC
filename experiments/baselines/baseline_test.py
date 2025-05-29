@@ -75,13 +75,13 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
         obs_dict = dict(zip(env.get_wrapper_attr('observation_variables'), observation))
         
         ##LOGGING FOR VALIDATION CHECK
-        current_month = obs_dict['month']
-        current_day = obs_dict['day_of_month']
-        outdoor_temp = obs_dict['outdoor_temperature']
-        if current_month != prev_month or current_day != prev_day:
-            print("Month:", current_month, "Day:", current_day, "Outdoor Temp:", outdoor_temp)
-            prev_month = current_month
-            prev_day = current_day
+        # current_month = obs_dict['month']
+        # current_day = obs_dict['day_of_month']
+        # outdoor_temp = obs_dict['outdoor_temperature']
+        # if current_month != prev_month or current_day != prev_day:
+        #     print("Month:", current_month, "Day:", current_day, "Outdoor Temp:", outdoor_temp)
+        #     prev_month = current_month
+        #     prev_day = current_day
 
         obs_dict = append_info_and_time_to_dict(obs_dict,info,current_step, timesteps_per_hour)
        
@@ -118,11 +118,10 @@ def train(config=None):
         action_size = 20  
         train_interval = 100 # Train every n steps
         timesteps_per_hour = 6  # 10-minute intervals
-        days_per_chunk = 10
+        days_per_chunk = 8
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
         start_date = datetime(1997, 1, 1)
-        days_per_chunk = 10
         total_days = 365
         train_season = config.train_season
 
@@ -132,9 +131,10 @@ def train(config=None):
         }
         env_id = config.env_id
         # Generate and split chunks
-        chunks = generate_chunks(start_date, days_per_chunk, total_days,seasons=[train_season])
+        chunks = generate_chunks(start_date, days_per_chunk,total_days,step_size=days_per_chunk,seasons=[train_season])
         #train_chunks, val_chunks, test_chunks = stratified_train_val_split(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
-        train_chunks, val_chunks, test_chunks = balanced_month_sample(chunks, val_chunks_per_month=1, seed=seed)
+        train_chunks, val_chunks, test_chunks =split_chunks(chunks, train_ratio=0.0, val_ratio=1.0, seed=seed)
+        #train_chunks, val_chunks, test_chunks = balanced_month_sample(chunks, val_chunks_per_month=1, seed=seed)
         num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
         experiment_save_dir = config.experiment_save_dir
         total_number_of_training_chunks = len(train_chunks)
@@ -325,7 +325,7 @@ def train(config=None):
                     }
                 )
 
-ENV_NAME = "A403_V3"
+ENV_NAME = "A403_medium"
 ALGORITHM_NAME = "on_off" # setpoint
 NUM_EPISODES = 1
 SEASON = "hot"

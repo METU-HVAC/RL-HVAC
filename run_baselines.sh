@@ -11,13 +11,13 @@ export PYTHONPATH="/home/mehmetbh/workspace/RL-Paper:$PYTHONPATH"
 # Path to the Python interpreter and your test script.
 PYTHON="/home/mehmetbh/workspace/RL-Paper/venv/bin/python"
 SCRIPT="/home/mehmetbh/workspace/RL-Paper/experiments/baselines/baseline_test.py"
-
+# please use FULL WINDOW FAN CONTROL
 # Define parameter lists.
 rooms=("A403medium")
 # seasons=("hot" "cool" "mixed")
 seasons=("hot")
 # algorithms=("setpoint" "on_off" "window_on_off" "window_schedule")
-algorithms=("setpoint1")
+algorithms=("multispeed_setpoint")
 # Loop through each combination and run the test sequentially.
 for room in "${rooms[@]}"; do
     for season in "${seasons[@]}"; do

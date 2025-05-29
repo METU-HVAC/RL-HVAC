@@ -161,16 +161,7 @@ def train(config=None):
             'lambda_co2': 1.0,
             'co2_threshold': 800,
         }
-        training_config = {
-            "batch_size": 64,
-            "gamma": 0.99,
-            "eps_start": 0.9,
-            "eps_end": 0.05,
-            "eps_decay": 5,
-            "tau": 0.005,
-            "lr":1e-4,
-            "memory_capacity": 100000
-        }
+
         agent = SACDiscrete(obs_dim=state_size, action_dim=action_size, updates_per_step=4, buffer_size=100000, learning_rate=1e-3, batch_size=64, device=device).to(device)
         # Create the main experiment directory (only once)
         experiment_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

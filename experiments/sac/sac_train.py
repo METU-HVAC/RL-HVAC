@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import random
 import os
 from sinergym.utils.constants import *
-from algorithms.dqn.dqn import *
+from algorithms.sac.sac import *
 from environments.reward import *
 from environments.environment import CO2_AND_TEMP_REWARD_CONFIG
 import torch
@@ -27,6 +27,11 @@ import json
 # 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
 # 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
 
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else
+    "mps" if torch.backends.mps.is_available() else
+    "cpu"
+)
 
 raw_observations = []
 log_val_dict = []
@@ -34,7 +39,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
     env = create_environment(env_id,start_date, end_date,season,CO2andTemperatureReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
-    OFF_ACTION = 5 #initially the the system is not working
+    OFF_ACTION = 6 #initially the the system is not working
     state = append_fan_speed_to_observation(env,state,OFF_ACTION)
     #state = append_rewards_to_observation(env,state,0,0,0)
 
@@ -60,9 +65,9 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
         # normalized_obs = torch.tensor(normalized_obs, dtype=torch.float32, device=device)
         normalized_values.append(normalized_reduced_state.cpu().numpy())  # Store values for analysis
         if episode_type == "Training":
-            action = agent.select_action(normalized_reduced_state)  # Epsilon-greedy action for training
+            action = agent.choose_action(normalized_reduced_state,greedy=True)  # Epsilon-greedy action for training
         else:
-            action = agent.choose_greedy_action(normalized_reduced_state)  # Greedy action for validation/testing
+            action = agent.choose_action(normalized_reduced_state)  # Greedy action for validation/testing
 
         #np_action = np.array([action], dtype=np.float32)  # Adjust dtype to match environment
 
@@ -93,14 +98,14 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
             
             normalized_next_reduced_obs = min_max_normalize(next_reduced_state,reduced_obs_mins,reduced_obs_maxs)
             normalized_next_reduced_obs = torch.tensor(normalized_next_reduced_obs, dtype=torch.float32, device=device)
-            
-            agent.store_transition(normalized_reduced_state, action, normalized_next_reduced_obs, reward)
+            agent.replay_buffer.store(normalized_reduced_state, action.cpu().numpy(), reward.cpu().numpy(), normalized_next_reduced_obs.cpu().numpy(), done)
             # Train DQN every few steps if buffer size is sufficient
-            if current_step % train_interval == 0:
+            if current_step % train_interval == 0 and agent.replay_buffer.size >= agent.batch_size:
                 # Perform one step of the optimization (on the policy network)
-                loss = agent.optimize_model()
-                if loss is not None:
-                    loss_list.append(loss)
+                actor_loss, critic_loss, alpha_loss = agent.update()
+                total_loss = actor_loss + critic_loss + alpha_loss
+                if total_loss is not None:
+                    loss_list.append(total_loss)
             #next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
         state = next_state
             
@@ -147,8 +152,8 @@ def train(config=None):
         remove_previous_run_logs()
                 
         state_size =  10 # Adjust based on the size of your observation space
-        action_size = 6  
-        train_interval = 200 # Train every n steps
+        action_size = 8
+        train_interval = 100 # Train every n steps
         timesteps_per_hour = 6  # 10-minute intervals
         days_per_chunk = 8
         timestep_per_day = timesteps_per_hour * 24
@@ -202,17 +207,8 @@ def train(config=None):
             'lambda_co2': 1.0,
             'co2_threshold': 800,
         }
-        training_config = {
-            "batch_size": 64,
-            "gamma": 0.99,
-            "eps_start": 0.9,
-            "eps_end": 0.01,
-            "eps_decay": 5,
-            "tau": 0.005,
-            "lr":learning_rate,
-            "memory_capacity": 300000
-        }
-        agent = DQNAgent(state_size, action_size,total_training_steps,training_config)
+        agent = SACDiscrete(obs_dim=state_size, action_dim=action_size, updates_per_step=4, 
+                            buffer_size=100000, learning_rate=learning_rate, batch_size=64, device=device).to(device)
         best_val_reward = -float('inf')
         best_model_path = None
         for episode in range(1, num_episodes + 1):
@@ -340,7 +336,7 @@ def train(config=None):
                     pbar.set_postfix_str(f"Val Chunk {pbar.n + 1-len(train_chunks)}/{len(val_chunks)}")
                     pbar.update(1)
                 
-                model_name = "dqn_co2_{:.0f}_temp_{:.0f}_energy_{:.0f}_lr_{:.0e}".format(energy_weight*100, temp_weight*100, co2_weight*100, learning_rate)
+                model_name = "sac_co2_{:.0f}_temp_{:.0f}_energy_{:.0f}_lr_{:.0e}".format(energy_weight*100, temp_weight*100, co2_weight*100, learning_rate)
                 save_observations_to_csv(log_val_dict, model_name,directory=experiment_save_dir,epoch=episode)
                 #Also save model with time
                 model_save_dir = f"{experiment_save_dir}/{model_name}_ep{episode}.pth"
@@ -443,6 +439,7 @@ def train(config=None):
                         "Temp": f"{val_temp_violation_mean:.1f}"
                     }
                 )
+                agent.reduce_lr()
         #After the training finisheds, we will run the best model once against the validaiton set for the final result.
         if best_model_path:
             print(f"Re-evaluating best model from: {best_model_path}")
@@ -520,14 +517,14 @@ train_season = "hot"
 current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")
 ENV_ID ="A403medium"             
 unique_experiment_name = f"{train_season}_{ENV_ID}_train_{current_date}"
-experiment_save_dir_name = "results/dqn/" + unique_experiment_name
+experiment_save_dir_name = "results/sac/" + unique_experiment_name
 if not os.path.exists(experiment_save_dir_name):
     os.makedirs(experiment_save_dir_name)
 
 
-ENV_NAME = f"{ENV_ID}_{train_season}_128_64_REDUCED_NO_SPEED" 
-ALGORITHM_NAME = "DQN"
-NUM_EPISODES = 8
+ENV_NAME = f"{ENV_ID}_{train_season}_128_64_NO_SPEED" 
+ALGORITHM_NAME = "SAC"
+NUM_EPISODES = 20
 
 name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
 sweep_config = {
@@ -542,7 +539,7 @@ metric = {
 parameters_dict = {
     'learning_rate': {
         #'values': [3e-4,1e-3,3e-3]
-        'values': [3e-4]
+        'values': [3e-4,1e-4]
     },
     'lambda_energy': {
         'values': [1/1_600_000]
@@ -557,22 +554,10 @@ parameters_dict = {
     #     'values': [1,2]
     # },
         "normalized_weights_ect": {#energy,co2,temp
-            'values': [ # 6 values
-            #    [0.3,0.5,0.4],
-            #    [0.3,0.5,0.6],
-            #    [0.3,0.5,0.8],
-            #    [0.4,0.5,0.4],
-            #    [0.4,0.5,0.6],
-            #    [0.4,0.5,0.8],
-            #    [0.5,0.5,0.4],
-            #    [0.5,0.5,0.6],
-            #    [0.5,0.5,0.8],
-            #    [0.5,0.5,0.4],
-            #    [0.5,0.5,0.6],
-            #    [0.5,0.5,0.8],
-               [0.5,0.5,1.0],
-               [0.5,0.5,1.5],
-               [0.5,0.5,2.0],
+            'values': [ # 5 values
+                [0.1,0.1,0.8],
+                #[0.2,0.6,0.2],
+                [0.6,0.2,0.2],
             ]
         },
     'experiment_save_dir': {
@@ -582,7 +567,7 @@ parameters_dict = {
         'value': train_season
     },
     'agent_count': {
-        'value': 3
+        'value': 4
     },
     'num_episodes': {
         'value': NUM_EPISODES

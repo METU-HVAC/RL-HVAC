@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Tuple, Union
 from sinergym.utils.constants import LOG_REWARD_LEVEL, YEAR
 from datetime import datetime
 import math
+max_energy_penalty = -1.0
 #This class combines Co2Reward and the classic reward function
 class CO2andTemperatureReward(LinearReward):
     def __init__(
@@ -52,6 +53,7 @@ class CO2andTemperatureReward(LinearReward):
             self.comfort_term_arr = []
             self.daily_timestep_count = 0
             self.timesteps_per_day = 144*9 # 12*24
+            
 
 
     def __call__(self, obs_dict: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
@@ -229,7 +231,12 @@ class CO2andTemperatureReward(LinearReward):
         Returns:
             Tuple[float, float, float,float]: Total reward, energy term, CO2 term, temperature term.
         """
-
+        #print before the reward
+        # global max_energy_penalty
+        # if energy_penalty < max_energy_penalty:
+        #     max_energy_penalty = energy_penalty
+            #print("Max energy penalty: ",max_energy_penalty)
+        #print("Energy penalty: ",energy_penalty, "CO2 penalty: ",co2_penalty, "Temperature penalty: ",temperature_penalty)
         energy_term = self.lambda_energy * self.W_energy * energy_penalty
         if occupancy == 0 and energy_term < 0: # if there is no person in the room and energy is consumed, give a constant penalty
             energy_term = -1.0
@@ -237,6 +244,7 @@ class CO2andTemperatureReward(LinearReward):
         co2_term = self.lambda_co2 * self.W_co2 * co2_penalty
         temperature_term = self.lambda_temperature * self.W_temperature * temperature_penalty
         reward = energy_term + co2_term + temperature_term
+        #print("Total reward: ",reward, "Energy term: ",energy_term, "CO2 term: ",co2_term, "Comfort term: ",temperature_term)
         self.energy_rew_arr.append(energy_term)
         self.co2_rew_arr.append(co2_term)
         self.comfort_term_arr.append(temperature_term)

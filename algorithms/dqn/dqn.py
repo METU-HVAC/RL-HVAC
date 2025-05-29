@@ -17,7 +17,7 @@ DQN_CONFIG = {
     "batch_size": 64,
     "gamma": 0.99,
     "eps_start": 0.9,
-    "eps_end": 0.05,
+    "eps_end": 0.01,
     "eps_decay": 5,
     "tau": 0.005,
     "lr": 1e-3,
@@ -55,18 +55,22 @@ class DQNAgent:
         self.memory.push(state,action,next_state,reward)
     def select_action(self, state):
         sample = random.random()
-        #Exponential decay
-        # self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
-        #     math.exp(-1. * (self.steps_done / self.total_training_steps) * self.eps_decay)
-            
-        #Linear decay
-        self.eps_threshold = max(self.eps_end, self.eps_start - (self.eps_start - self.eps_end) * (self.steps_done / self.total_training_steps))
+
+        # Linear decay that reaches eps_end at 50% of training
+        reach_ratio = 0.5
+        reach_step = self.total_training_steps * reach_ratio
+        if self.steps_done <= reach_step:
+            self.eps_threshold = self.eps_start - (self.eps_start - self.eps_end) * (self.steps_done / reach_step)
+        else:
+            self.eps_threshold = self.eps_end
+
         self.steps_done += 1
+
         if sample > self.eps_threshold:
             with torch.no_grad():
                 return self.policy_net(state).max(1).indices.view(1, 1)
         else:
-            return torch.tensor(random.randint(0, self.n_actions - 1), device=device, dtype=torch.long).view(1, 1)
+            return torch.tensor([[random.randint(0, self.n_actions - 1)]], device=device, dtype=torch.long)
     def choose_greedy_action(self,state):
         with torch.no_grad():
             return self.policy_net(state).max(1).indices.view(1, 1)
