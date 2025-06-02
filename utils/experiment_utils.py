@@ -221,6 +221,12 @@ reduced_obs_maxs = [np.float32(42.0),
                     np.float32(1.0),
                     # np.float32(1.0),
                     ]
+# {'month': np.float32(7.0), 'day_of_month': np.float32(10.0), 'hour': np.float32(0.0),
+#  'outdoor_temperature': np.float32(28.666666), 'outdoor_humidity': np.float32(36.666668), '
+# htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
+# 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
+# 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
+
 reduced_obs_stds = obs_stds = [ 
                       np.float32(9.132451), 
                       np.float32(4.2705617),
@@ -239,16 +245,41 @@ obs_stds = [np.float32(3.435255), np.float32(8.530136), np.float32(6.9179473),
                       np.float32(13.180379), np.float32(4.2705617), np.float32(17.075714), 
                       np.float32(3.6196496), np.float32(164.96347), np.float32(8914.488), 
                       np.float32(190947.97), np.float64(0.43426634464562747), np.float64(0.2501266749813906)]
-# obs_means =  [-1.88616163e-01 ,-2.57461701e-01 , 2.59861111e-01, -2.36515783e-05,
-#  -1.79738013e-04  ,2.37658727e+01  ,3.70050000e+01,  2.21512500e+01,
-#   2.51512500e+01 , 2.34620032e+01 , 3.42801016e+01 , 1.71827337e+00,
-#   7.50636800e+02 , 2.44119660e-01  ,1.02112024e+01 , 4.52476931e+02,
-#   4.37303756e+05]
-# obs_stds =  [5.76098289e-01 ,7.52494634e-01, 4.38558222e-01, 7.07073908e-01,
-#  7.07139627e-01, 8.30790585e+00 ,2.19055985e+01 ,1.45889459e+00,
-#  1.45889459e+00 ,1.74003051e+00 ,1.61345113e+01 ,1.99147147e+00,
-#  6.55276029e+02 ,4.34552292e-01 ,5.27910243e+00 ,6.01012338e+01,
-#  3.89152352e+05]
+keys_of_interest = [
+    "months", "day_of_months", "hours", "outdoor_temperatures", "outdoor_humidities",
+    "htg_setpoints", "clg_setpoints", "air_temperatures", "air_humidities",
+    "people_occupants", "air_co2s", "window_fan_energies", "total_electricity_HVACs"
+]
+obs_mins = [
+    np.float32(1.0),
+    np.float32(1.0),
+    np.float32(0.0),
+    np.float32(-3.6433074),
+    np.float32(3.0),
+    np.float32(5.0),
+    np.float32(23.0),
+    np.float32(9.613201),
+    np.float32(5.044188),
+    np.float32(0.0),
+    np.float32(400.0),
+    np.float32(0.0),
+    np.float32(0.0)
+] 
+obs_maxs = [
+    np.float32(12.0),
+    np.float32(31.0),
+    np.float32(23.0),
+    np.float32(47.1775),
+    np.float32(100.0),
+    np.float32(23.0),
+    np.float32(50.0),
+    np.float32(50.0), 
+    np.float32(100.0),  
+    np.float32(9.6), # people occupant
+    np.float32(2000.0), # air_co2
+    np.float32(20250.0),
+    np.float32(1834689.4)
+]
 def min_max_normalize(obs, min_vals, max_vals):
     if isinstance(obs, torch.Tensor):
         # Move to CPU if needed and convert to NumPy

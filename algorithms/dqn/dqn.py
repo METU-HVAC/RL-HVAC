@@ -77,7 +77,7 @@ class DQNAgent:
         
 
     def optimize_model(self):
-        if len(self.memory) < self.batch_size:
+        if len(self.memory) < self.batch_size * 5:
             return
 
         transitions = self.memory.sample(self.batch_size)
@@ -91,6 +91,13 @@ class DQNAgent:
         reward_batch = torch.cat(batch.reward)
 
         state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+                # After computing state_action_values
+        # q_values = self.policy_net(state_batch)
+        # max_q_value = q_values.max().item()
+        # mean_q_value = q_values.mean().item()
+        # min_q_value = q_values.min().item()
+        # print(f"[Step {self.steps_done}] Q-Stats | Mean: {mean_q_value:.3f}, Max: {max_q_value:.3f}, Min: {min_q_value:.3f}")
+
         next_state_values = torch.zeros(self.batch_size, device=device)
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values

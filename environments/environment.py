@@ -57,12 +57,12 @@ def create_environment(env_id,start_date, end_date,season, reward_fn,episode_typ
             'cool': f'Eplus-{env_id}-cool-discrete-stochastic-v1',
             'mixed': f'Eplus-{env_id}-mixed-discrete-stochastic-v1'
         }
-    elif episode_type == "Validation":
+    else:
         
         season_env_mapping = {
-            'hot': f'Eplus-{env_id}-hot-discrete-stochastic-v1',
-            'cool': f'Eplus-{env_id}-cool-discrete-stochastic-v1',
-            'mixed': f'Eplus-{env_id}-mixed-discrete-stochastic-v1'
+            'hot': f'Eplus-{env_id}-hot-discrete-v1',
+            'cool': f'Eplus-{env_id}-cool-discrete-v1',
+            'mixed': f'Eplus-{env_id}-mixed-discrete-v1'
         }
     
 

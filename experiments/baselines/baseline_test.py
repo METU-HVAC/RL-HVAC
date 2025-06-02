@@ -196,7 +196,7 @@ def train(config=None):
                 val_obs_dict = {}
                 for val_chunk in val_chunks:
                     obs_dict = {}    
-                    reward ,loss,obs_dict = run_simulation(env_id,*val_chunk,
+                    reward ,_,obs_dict = run_simulation(env_id,*val_chunk,
                                                                             "Validation", 
                                                                             steps_per_chunk,
                                                                             agent,
