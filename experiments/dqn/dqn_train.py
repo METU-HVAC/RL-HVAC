@@ -21,23 +21,57 @@ import wandb
 import pandas as pd
 import json
 
-## OBSERVATION SPACE 
-# {'month': np.float32(7.0), 'day_of_month': np.float32(10.0), 'hour': np.float32(0.0),
-#  'outdoor_temperature': np.float32(28.666666), 'outdoor_humidity': np.float32(36.666668), '
-# htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
-# 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
-# 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
 
-
+observation_variables = [
+    'month', 'day_of_month', 'hour',
+    'outdoor_temperature', 'outdoor_humidity',
+    'htg_setpoint', 'clg_setpoint', 'air_temperature',
+    'air_humidity', 'people_occupant', 'air_co2',
+    'window_fan_energy', 'total_electricity_HVAC'
+]
+all_action_map = {
+    0 : [21,23,1.0,0.0],
+    1 : [21,23,1.0,0.25],
+    2 : [21,23,1.0,0.50],
+    3 : [21,23,1.0,1.0],
+    4 : [23,26,1.0,0.0],
+    5 : [23,26,1.0,0.25],
+    6 : [23,26,1.0,0.50],
+    7 : [23,26,1.0,1.0],
+    8 : [5,50,0.0,0.0],
+    9 : [5,50,0.0,0.25],
+    10 : [5,50,0.0,0.50],
+    11 : [5,50,0.0,1.0]
+}
+def get_agent_observation_dict_based(agent_name: str, observation: List[float], action: int) -> List[float]:
+    if isinstance(observation, torch.Tensor):
+        observation = observation.squeeze().tolist()  # flatten if it's (1, N)
+    obs_dict = dict(zip(observation_variables, observation))
+    obs_dict = append_fan_speed_to_dict(
+        obs_dict,
+        all_action_map[action][3],
+        all_action_map[action][2]
+    )
+    
+    obs_dict['is_summer'] = is_summer(obs_dict['month'])
+    if agent_name == "WindowFan":
+        keys = ['hour', 'air_co2', 'window_fan_energy', 'people_occupant']
+    elif agent_name == "HVAC":
+        keys = ['hour','outdoor_temperature','air_temperature', 'people_occupant', 'window_fan_speed', 'is_summer', 'total_electricity_HVAC']
+    elif agent_name == "CombinedAgent":
+        keys = ['hour', 'outdoor_temperature', 'outdoor_humidity', 'air_temperature', 'people_occupant', 
+                'window_fan_speed', 'is_summer', 'total_electricity_HVAC','window_fan_energy','air_co2']
+    else:
+        raise ValueError(f"Unknown agent: {agent_name}")
+    
+    return [obs_dict[k] for k in keys]
 raw_observations = []
 log_val_dict = []
 def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
     env = create_environment(env_id,start_date, end_date,season,CO2andTemperatureReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
-    OFF_ACTION = 5 #initially the the system is not working
-    state = append_fan_speed_to_observation(env,state,OFF_ACTION)
-    #state = append_rewards_to_observation(env,state,0,0,0)
+    combined_action = 8 #initially the the system is not working
 
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     
@@ -48,55 +82,33 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
     loss_list = []
     all_obs_dict = {}
     
-    normalized_values = []  # Store normalized observations
-
     previous_action = 0
     while current_step < steps_per_chunk:
         
-        reduced_state = reduce_state(state)
-        normalized_reduced_state = min_max_normalize(reduced_state,reduced_obs_mins,reduced_obs_maxs)
-        normalized_reduced_state = torch.tensor(normalized_reduced_state, dtype=torch.float32, device=device)
+        normalized_state = torch.tensor(min_max_normalize(state,obs_mins,obs_maxs), dtype=torch.float32, device=device)
         
-        # normalized_obs = normalize_observation(state,obs_means,obs_stds)
-        # normalized_obs = torch.tensor(normalized_obs, dtype=torch.float32, device=device)
-        normalized_values.append(normalized_reduced_state.cpu().numpy())  # Store values for analysis
+        combined_obs = get_agent_observation_dict_based("CombinedAgent", normalized_state, action=combined_action)
+        combined_obs_tensor = torch.tensor(combined_obs, dtype=torch.float32, device=device).unsqueeze(0)
+        
         if episode_type == "Training":
-            action = agent.select_action(normalized_reduced_state)  # Epsilon-greedy action for training
+            action = agent.select_action(combined_obs_tensor)
         else:
-            action = agent.choose_greedy_action(normalized_reduced_state)  # Greedy action for validation/testing
+            action = agent.choose_greedy_action(combined_obs_tensor) 
         
-        #np_action = np.array([action], dtype=np.float32)  # Adjust dtype to match environment
-
-        observation, reward, truncated, terminated, info = env.step(action.item())
-        
+        next_state, reward, truncated, terminated, info = env.step(action.item())
+        done = terminated or truncated
+        reward = torch.tensor([reward],dtype=torch.float32, device=device)
         #Switching penalty
         # if previous_action != action.item():
         #     reward -= 0.1
         # previous_action = action.item()
-        
-        
-        observation = append_fan_speed_to_observation(env,observation,action.item())
-        #observation = append_rewards_to_observation(env,observation,info['energy_term'],info['comfort_term'],info['co2_term'])
-        raw_observations.append(observation)
-
-        #observation, reward, truncated, terminated, info = env.step(action.item())
-        done = terminated or truncated
-        reward = torch.tensor([reward],dtype=torch.float32, device=device)
-        
-        next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
-        
+        normalized_next_state = torch.tensor(min_max_normalize(next_state,obs_mins,obs_maxs), dtype=torch.float32, device=device)
+        next_obs = get_agent_observation_dict_based("CombinedAgent", normalized_next_state, action=combined_action)
+        next_obs_tensor = torch.tensor(next_obs, dtype=torch.float32, device=device).unsqueeze(0)
+    
         if episode_type == "Training":
-            # normalized_next_obs = normalize_observation(next_state,obs_means,obs_stds)
-            # normalized_next_obs = torch.tensor(normalized_next_obs, dtype=torch.float32, device=device)
-            
-            
-            next_reduced_state = reduce_state(next_state)
-            
-            normalized_next_reduced_obs = min_max_normalize(next_reduced_state,reduced_obs_mins,reduced_obs_maxs)
-            normalized_next_reduced_obs = torch.tensor(normalized_next_reduced_obs, dtype=torch.float32, device=device)
-            
-            agent.store_transition(normalized_reduced_state, action, normalized_next_reduced_obs, reward)
-            
+
+            agent.store_transition(combined_obs_tensor, action, next_obs_tensor, reward)
             # Train DQN every few steps if buffer size is sufficient
             if current_step % train_interval == 0:
                 # Perform one step of the optimization (on the policy network)
@@ -106,12 +118,11 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
             #next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
         state = next_state
             
-        obs_dict = dict(zip(env.get_wrapper_attr('observation_variables'), observation))
+        obs_dict = dict(zip(env.get_wrapper_attr('observation_variables'), state))
 
         obs_dict = append_info_and_time_to_dict(obs_dict,info,current_step, timesteps_per_hour)
-       
-        obs_dict = append_fan_speed_to_dict(obs_dict, DEFAULT_A403V3_DISCRETE_FUNCTION(action.item())[3], DEFAULT_A403V3_DISCRETE_FUNCTION(action.item())[2])
-        obs_dict = append_raw_action_to_dict(obs_dict,action.item())
+        obs_dict = append_fan_speed_to_dict(obs_dict, all_action_map[combined_action][3], all_action_map[combined_action][2])        
+        obs_dict = append_raw_action_to_dict(obs_dict,combined_action)
         all_obs_dict = add_observation(all_obs_dict, obs_dict)
         
         total_reward += reward
@@ -121,14 +132,6 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
 
         current_step += 1
     
-    # # After loop, analyze normalization
-    # normalized_values = np.array(normalized_values)
-    # mean = np.mean(normalized_values, axis=0)
-    # std = np.std(normalized_values, axis=0)
-
-    # print(f"Mean of normalized observations: {mean}")
-    # print(f"Standard deviation of normalized observations: {std}")
-
     env.close()  # Close the environment after use
     if len(loss_list) > 0:
         loss = sum(loss_list) / len(loss_list)
@@ -149,7 +152,7 @@ def train(config=None):
         remove_previous_run_logs()
                 
         state_size =  10 # Adjust based on the size of your observation space
-        action_size = 40  
+        action_size = 12  
         train_interval = 200 # Train every n steps
         timesteps_per_hour = 6  # 10-minute intervals
         days_per_chunk = 8
@@ -180,7 +183,12 @@ def train(config=None):
         # energy_weight = config.energy_weight / total_weight
         # co2_weight = config.co2_weight / total_weight
         # temp_weight = config.temp_weight / total_weight
-        energy_weight, co2_weight, temp_weight = config.normalized_weights_ect
+        #energy_weight, co2_weight, temp_weight = config.normalized_weights_ect
+        co2_weight = config.co2_weight
+        temp_weight = config.temp_weight
+        fan_energy_weight = 1 - co2_weight
+        ac_energy_weight = 1 - temp_weight
+        
         lambda_energy = config.lambda_energy
         learning_rate = config.learning_rate
         experiment_save_dir = config.experiment_save_dir
@@ -196,7 +204,8 @@ def train(config=None):
             'energy_variables': ['total_electricity_HVAC', 'window_fan_energy'],
             'range_comfort_winter': (20.0, 23.5),
             'range_comfort_summer': (23.0, 26.0),
-            'energy_weight': energy_weight,
+            'ac_energy_weight': ac_energy_weight,
+            'fan_energy_weight': fan_energy_weight,
             'co2_weight': co2_weight,
             'temperature_weight': temp_weight,
             'lambda_energy': lambda_energy, # 1/100.000
@@ -342,7 +351,7 @@ def train(config=None):
                     pbar.set_postfix_str(f"Val Chunk {pbar.n + 1-len(train_chunks)}/{len(val_chunks)}")
                     pbar.update(1)
                 
-                model_name = "dqn_co2_{:.0f}_temp_{:.0f}_energy_{:.0f}_lr_{:.0e}".format(energy_weight*100, temp_weight*100, co2_weight*100, learning_rate)
+                model_name = "dqn_co2_{:.0f}_temp_{:.0f}_lr_{:.0e}".format( co2_weight*100, temp_weight*100, learning_rate)
                 save_observations_to_csv(log_val_dict, model_name,directory=experiment_save_dir,epoch=episode)
                 #Also save model with time
                 model_save_dir = f"{experiment_save_dir}/{model_name}_ep{episode}.pth"
@@ -527,13 +536,13 @@ if not os.path.exists(experiment_save_dir_name):
     os.makedirs(experiment_save_dir_name)
 
 
-ENV_NAME = f"{ENV_ID}_{train_season}_128_64_REDUCED_NO_SPEED" 
-ALGORITHM_NAME = "MOCK DQN"
-NUM_EPISODES = 2
+ENV_NAME = f"{ENV_ID}_{train_season}_128_64_MULTI_FAN" 
+ALGORITHM_NAME = "DQN"
+NUM_EPISODES = 8
 
 name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
 sweep_config = {
-    'method': 'grid' ,
+    'method': 'random' ,
     'name' : name
     }
 metric = {
@@ -551,32 +560,15 @@ parameters_dict = {
     },
     # 'energy_weight': {
     #     'values': [1,2]
-    # },
-    # 'co2_weight': {
-    #     'values': [0.5,1]
-    # },
-    # 'temp_weight': {
-    #     'values': [1,2]
-    # },
-        "normalized_weights_ect": {#energy,co2,temp
-            'values': [ # 6 values
-            #    [0.3,0.5,0.4],
-            #    [0.3,0.5,0.6],
-            #    [0.3,0.5,0.8],
-            #    [0.4,0.5,0.4],
-            #    [0.4,0.5,0.6],
-            #    [0.4,0.5,0.8],
-            #    [0.5,0.5,0.4],
-            #    [0.5,0.5,0.6],
-            #    [0.5,0.5,0.8],
-            #    [0.5,0.5,0.4],
-            #    [0.5,0.5,0.6],
-            #    [0.5,0.5,0.8],
-               [0.5,0.5,1.0],
-               [0.5,0.5,1.5],
-               [0.5,0.5,2.0],
-            ]
-        },
+    'co2_weight': {
+        'min': 0.33,
+        'max': 0.50,
+    },
+    'temp_weight': {
+        ## When temp is 1 energy be from 1 to 3. Which means temp weight can be from 0.25 to 0.50
+        'min': 0.20,
+        'max': 0.50,
+    },
     'experiment_save_dir': {
         'value': experiment_save_dir_name
     },
@@ -584,7 +576,7 @@ parameters_dict = {
         'value': train_season
     },
     'agent_count': {
-        'value': 3
+        'value': 10
     },
     'num_episodes': {
         'value': NUM_EPISODES

@@ -20,7 +20,8 @@ class CO2andTemperatureReward(LinearReward):
             temperature_variables: List[str],
             range_comfort_winter: Tuple[int, int],
             range_comfort_summer: Tuple[int, int],
-            energy_weight: float = 0.3,
+            ac_energy_weight: float = 0.3,
+            fan_energy_weight: float = 0.3,
             co2_weight: float = 0.3,
             temperature_weight: float = 0.3,
             summer_start: Tuple[int, int] = (6, 1),
@@ -35,7 +36,8 @@ class CO2andTemperatureReward(LinearReward):
             self.co2_variable = co2_variable
             self.energy_names = energy_variables
             self.temp_names = temperature_variables
-            self.W_energy = energy_weight
+            self.W_fan_energy = fan_energy_weight
+            self.W_ac_energy = ac_energy_weight
             self.W_co2 = co2_weight
             self.W_temperature = temperature_weight
             self.range_comfort_winter = range_comfort_winter
@@ -78,7 +80,6 @@ class CO2andTemperatureReward(LinearReward):
         """
         window_penalty = -energy_values.get("window_fan_energy", 0.0)
         ac_penalty = -energy_values.get("total_electricity_HVAC", 0.0)
-
         total_penalty = window_penalty + ac_penalty
         return total_penalty, window_penalty, ac_penalty
     def __call__(self, obs_dict: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
@@ -133,7 +134,8 @@ class CO2andTemperatureReward(LinearReward):
             'ac_energy_term': ac_energy_term,
             'co2_term': co2_term,
             'comfort_term': comfort_term,
-            'energy_weight': self.W_energy,
+            'ac_energy_weight': self.W_ac_energy,
+            'fan_energy_weight': self.W_fan_energy,
             'co2_weight': self.W_co2,
             'temperature_weight': self.W_temperature,
             'abs_energy_penalty': energy_penalty,
@@ -292,14 +294,19 @@ class CO2andTemperatureReward(LinearReward):
         #print("Energy penalty: ",energy_penalty, "CO2 penalty: ",co2_penalty, "Temperature penalty: ",temperature_penalty)
         #energy_term = self.lambda_energy * self.W_energy * energy_penalty
         
-        window_energy_term = self.lambda_energy*100 * self.W_energy * window_energy_penalty
-        ac_energy_term = self.lambda_energy * self.W_energy * ac_energy_penalty
+        window_energy_term = self.lambda_energy*100 * self.W_fan_energy * window_energy_penalty
+        ac_energy_term = self.lambda_energy * self.W_ac_energy * ac_energy_penalty
         
-        # if occupancy == 0 and energy_term < 0: # if there is no person in the room and energy is consumed, give a constant penalty
-        #     energy_term = -1.0
+        if occupancy == 0 and window_energy_term < 0:
+            window_energy_term = window_energy_term*2
+            
+        if occupancy == 0 and ac_energy_term <0:
+            ac_energy_term = ac_energy_term*2
         
         co2_term = self.lambda_co2 * self.W_co2 * co2_penalty
         temperature_term = self.lambda_temperature * self.W_temperature * temperature_penalty
+        
+        
         reward = window_energy_term + ac_energy_term + co2_term + temperature_term
         #print("Total reward: ",reward, "Energy term: ",energy_term, "CO2 term: ",co2_term, "Comfort term: ",temperature_term)
         # self.energy_rew_arr.append(energy_term)

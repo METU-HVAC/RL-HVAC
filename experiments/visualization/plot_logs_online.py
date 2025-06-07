@@ -23,10 +23,11 @@ import os
 # }
 
 datasets_info = {
-    "On-Off": {"csv": "results/on_off/mixed_A403medium_baseline_2025-04-17_13:43/on_off.csv", "color": "blue"},
-    "Setpoint": {"csv": "results/setpoint/mixed_A403medium_baseline_2025-04-17_13:43/setpoint.csv", "color": "green"},
-    "DQN-Switch": {"csv": "results/dqn/mixed_A403medium_train_2025-04-16_22:25/dqn_co2_100_temp_100_energy_1_lr_3e-03_10.csv", "color": "orange"},
-    "DQN-NoSwitch": {"csv": "results/dqn/mixed_A403medium_train_2025-04-17_08:41/dqn_co2_100_temp_100_energy_1_lr_3e-03_10.csv", "color": "red"},
+    "On-Off": {"csv": "results/on_off1/hot_A403medium_baseline_2025-05-07_22:11/on_off1.csv", "color": "blue"},
+    "Setpoint": {"csv": "results/setpoint1/hot_A403medium_baseline_2025-05-07_22:13/setpoint1.csv", "color": "green"},
+    "MultiSpeed" : {"csv": "results/multispeed_setpoint/hot_A403medium_baseline_2025-05-15_13:44/multispeed_setpoint.csv", "color": "purple"},
+    "MADQN-Energy": {"csv": "results/madqn/hot_A403medium_train_2025-06-02_22:39/madqn_ac_co2_47_temp_50_lr_3e-04_8.csv", "color": "orange"},
+    # "DQN-NoSwitch": {"csv": "results/dqn/mixed_A403medium_train_2025-04-17_08:41/dqn_co2_100_temp_100_energy_1_lr_3e-03_10.csv", "color": "red"},
 }
 dataset_labels = list(datasets_info.keys())
 
