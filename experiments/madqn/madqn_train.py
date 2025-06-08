@@ -20,13 +20,6 @@ from tqdm import tqdm
 import wandb
 import pandas as pd
 import json
-## OBSERVATION SPACE 
-# {'month': np.float32(7.0), 'day_of_month': np.float32(10.0), 'hour': np.float32(0.0),
-#  'outdoor_temperature': np.float32(28.666666), 'outdoor_humidity': np.float32(36.666668), '
-# htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
-# 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
-# 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
-
 # all_action_map = {
 #     0: [21.0, 23.0, 1.0, 0.0],
 #     1: [21.0, 23.0, 1.0, 1.0],
@@ -781,83 +774,83 @@ def train(config=None):
             })
 
             
-# Create experiment save dir
-train_season = "hot"
-current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")
-ENV_ID ="A403medium"             
-unique_experiment_name = f"{train_season}_{ENV_ID}_train_{current_date}"
-experiment_save_dir_name = "results/madqn/" + unique_experiment_name
-if not os.path.exists(experiment_save_dir_name):
-    os.makedirs(experiment_save_dir_name)
+# # Create experiment save dir
+# train_season = "hot"
+# current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")
+# ENV_ID ="A403medium"             
+# unique_experiment_name = f"{train_season}_{ENV_ID}_train_{current_date}"
+# experiment_save_dir_name = "results/madqn/" + unique_experiment_name
+# if not os.path.exists(experiment_save_dir_name):
+#     os.makedirs(experiment_save_dir_name)
 
 
-ENV_NAME = f"{ENV_ID}_{train_season}_64_64_MULTISPEED_FAN" 
-ALGORITHM_NAME = "MADQN"
-NUM_EPISODES = 10
+# ENV_NAME = f"{ENV_ID}_{train_season}_64_64_MULTISPEED_FAN" 
+# ALGORITHM_NAME = "MADQN"
+# NUM_EPISODES = 10
 
-name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
-sweep_config = {
-    'method': 'random',
-    'name' : name
-    }
-metric = {
-    'name': 'final_val_power_kWh_mean',
-    'goal': 'minimize'   
-    }
+# name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
+# sweep_config = {
+#     'method': 'random',
+#     'name' : name
+#     }
+# metric = {
+#     'name': 'final_val_power_kWh_mean',
+#     'goal': 'minimize'   
+#     }
 
-parameters_dict = {
-    'learning_rate': {
-        #'values': [3e-4,1e-3,3e-3]
-        'values': [3e-4]
-    },
-    'lambda_energy': {
-        'values': [1/1_600_000]
-    },
-    # 'energy_weight': {
-    #     'min': 1,
-    #     'max': 3,
-    # },
-    'gamma': {
-        'min': 0.8,
-        'max': 0.99,
-    },
-    'co2_weight': {
-        'min': 0.30,
-        'max': 0.45,
-    },
-    'temp_weight': {
-        ## When temp is 1 energy be from 1 to 3. Which means temp weight can be from 0.25 to 0.50
-        'min': 0.35,
-        'max': 0.50,
-    },
-    'experiment_save_dir': {
-        'value': experiment_save_dir_name
-    },
-    'train_season': {
-        'value': train_season
-    },
-    'agent_count': {
-        'value': 20
-    },
-    'num_episodes': {
-        'value': NUM_EPISODES
-    },
-    'env_id': {
-        'value': ENV_ID
-    },
-}
-sweep_config['parameters'] = parameters_dict
-sweep_config['metric'] = metric
+# parameters_dict = {
+#     'learning_rate': {
+#         #'values': [3e-4,1e-3,3e-3]
+#         'values': [3e-4]
+#     },
+#     'lambda_energy': {
+#         'values': [1/1_600_000]
+#     },
+#     # 'energy_weight': {
+#     #     'min': 1,
+#     #     'max': 3,
+#     # },
+#     'gamma': {
+#         'min': 0.8,
+#         'max': 0.99,
+#     },
+#     'co2_weight': {
+#         'min': 0.30,
+#         'max': 0.45,
+#     },
+#     'temp_weight': {
+#         ## When temp is 1 energy be from 1 to 3. Which means temp weight can be from 0.25 to 0.50
+#         'min': 0.35,
+#         'max': 0.50,
+#     },
+#     'experiment_save_dir': {
+#         'value': experiment_save_dir_name
+#     },
+#     'train_season': {
+#         'value': train_season
+#     },
+#     'agent_count': {
+#         'value': 20
+#     },
+#     'num_episodes': {
+#         'value': NUM_EPISODES
+#     },
+#     'env_id': {
+#         'value': ENV_ID
+#     },
+# }
+# sweep_config['parameters'] = parameters_dict
+# sweep_config['metric'] = metric
 
 
-config_save_path = os.path.join(experiment_save_dir_name, "parameters_config.json")
-with open(config_save_path, "w") as f:
-    json.dump(parameters_dict, f, indent=4)
-print(f"Parameters saved to {config_save_path}")
+# config_save_path = os.path.join(experiment_save_dir_name, "parameters_config.json")
+# with open(config_save_path, "w") as f:
+#     json.dump(parameters_dict, f, indent=4)
+# print(f"Parameters saved to {config_save_path}")
 
-sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=parameters_dict['agent_count']['value'])
+# sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
+# wandb.agent(sweep_id, train, count=parameters_dict['agent_count']['value'])
 
-#Close the agent
+# #Close the agent
 
-wandb.finish()
+# wandb.finish()
