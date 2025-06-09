@@ -73,7 +73,7 @@ observation_variables = [
 
 raw_observations = []
 log_val_dict = []
-
+final_log_dict = []
 # Dummy is_summer function
 def is_summer(month: float) -> float:
     return float(month in [6.0, 7.0, 8.0])
@@ -702,6 +702,7 @@ def train(config=None):
             final_val_co2_viol_list = []
             final_temp_deviations = []
             final_co2_deviations = []
+            final_obs_dict = {}
             with tqdm(total=len(val_chunks), 
                         desc=f"Episode {num_episodes + 1} (Final Validation)", 
                         ncols=120, 
@@ -718,6 +719,8 @@ def train(config=None):
                                                     train_interval,
                                                     timesteps_per_hour,
                                                     reward_config)
+                    final_obs_dict = update_combined_dict(obs_dict, final_obs_dict)
+                    append_observations(final_obs_dict, final_log_dict)
 
                     window_power = sum(obs_dict['window_fan_energies'])
                     hvac_power = sum(obs_dict['total_electricity_HVACs'])
@@ -744,7 +747,7 @@ def train(config=None):
                     
                     
                     ac_model_name = "madqn_co2_{:.0f}_temp_{:.0f}_lr_{:.0e}".format(co2_weight*1000, temp_weight*1000,learning_rate)
-                    save_observations_to_csv(log_val_dict, ac_model_name,directory=experiment_save_dir,epoch="final")
+                    save_observations_to_csv(final_log_dict, ac_model_name,directory=experiment_save_dir,epoch="final")
                     
                     pbar.set_postfix({
                         "Pwr": f"{np.mean(final_val_power_list):.1f}",

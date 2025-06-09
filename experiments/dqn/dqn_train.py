@@ -52,21 +52,37 @@ def get_agent_observation_dict_based(agent_name: str, observation: List[float], 
         all_action_map[action][3],
         all_action_map[action][2]
     )
+    # De‐normalize the calendar fields
+    #    month_norm in [0..1] → month_raw in [1..12]
+    MONTH_MIN, MONTH_MAX = 1.0, 12.0
+    DOM_MIN,   DOM_MAX   = 1.0, 31.0
     
-    obs_dict['is_summer'] = is_summer(obs_dict['month'])
+    month_raw = int(round(obs_dict['month'] * (MONTH_MAX - MONTH_MIN) + MONTH_MIN))
+    dom_raw   = int(round(obs_dict['day_of_month'] * (DOM_MAX  - DOM_MIN)   + DOM_MIN))
+    
+    dt = datetime(
+        YEAR,
+        month_raw,
+        dom_raw
+    )
+    
+    obs_dict['weekday'] = dt.weekday() / 6.0
+    obs_dict['is_summer'] = is_summer(month_raw)
+    
     if agent_name == "WindowFan":
-        keys = ['hour', 'air_co2', 'window_fan_energy', 'people_occupant']
+        keys = ['hour', 'air_co2', 'window_fan_energy', 'people_occupant','weekday']
     elif agent_name == "HVAC":
-        keys = ['hour','outdoor_temperature','air_temperature', 'people_occupant', 'window_fan_speed', 'is_summer', 'total_electricity_HVAC']
+        keys = ['hour','outdoor_temperature','air_temperature', 'people_occupant', 'window_fan_speed', 'is_summer','weekday', 'total_electricity_HVAC']
     elif agent_name == "CombinedAgent":
         keys = ['hour', 'outdoor_temperature', 'outdoor_humidity', 'air_temperature', 'people_occupant', 
-                'window_fan_speed', 'is_summer', 'total_electricity_HVAC','window_fan_energy','air_co2']
+                'window_fan_speed', 'is_summer', 'total_electricity_HVAC','window_fan_energy','air_co2','weekday']
     else:
         raise ValueError(f"Unknown agent: {agent_name}")
     
     return [obs_dict[k] for k in keys]
 raw_observations = []
 log_val_dict = []
+final_log_dict = []
 def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
     env = create_environment(env_id,start_date, end_date,season,CO2andTemperatureReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
@@ -142,7 +158,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
 def train(config=None):
     with wandb.init(config=config):
         config = wandb.config
-        
+        os.makedirs(config.experiment_save_dir, exist_ok=True)
         seed = 42  # Set seed for reproducibility
         # Set seeds for reproducibility
         random.seed(seed)
@@ -151,7 +167,7 @@ def train(config=None):
 
         remove_previous_run_logs()
                 
-        state_size =  10 # Adjust based on the size of your observation space
+        state_size =  11 # Adjust based on the size of your observation space
         action_size = 12  
         train_interval = 200 # Train every n steps
         timesteps_per_hour = 6  # 10-minute intervals
@@ -188,7 +204,7 @@ def train(config=None):
         temp_weight = config.temp_weight
         fan_energy_weight = 1 - co2_weight
         ac_energy_weight = 1 - temp_weight
-        
+        gamma = config.gamma
         lambda_energy = config.lambda_energy
         learning_rate = config.learning_rate
         experiment_save_dir = config.experiment_save_dir
@@ -215,7 +231,7 @@ def train(config=None):
         }
         training_config = {
             "batch_size": 64,
-            "gamma": 0.99,
+            "gamma": gamma,
             "eps_start": 0.9,
             "eps_end": 0.01,
             "eps_decay": 5,
@@ -352,7 +368,7 @@ def train(config=None):
                     pbar.update(1)
                 
                 model_name = "dqn_co2_{:.0f}_temp_{:.0f}_lr_{:.0e}".format( co2_weight*100, temp_weight*100, learning_rate)
-                save_observations_to_csv(log_val_dict, model_name,directory=experiment_save_dir,epoch=episode)
+                #save_observations_to_csv(log_val_dict, model_name,directory=experiment_save_dir,epoch=episode)
                 #Also save model with time
                 model_save_dir = f"{experiment_save_dir}/{model_name}_ep{episode}.pth"
                 agent.save_model(model_save_dir)    
@@ -464,6 +480,7 @@ def train(config=None):
             final_val_co2_viol_list = []
             final_temp_deviations = []
             final_co2_deviations = []
+            final_obs_dict = {}
             with tqdm(total=len(val_chunks), 
                         desc=f"Episode {num_episodes + 1} (Final Validation)", 
                         ncols=120, 
@@ -478,6 +495,9 @@ def train(config=None):
                                                     train_interval,
                                                     timesteps_per_hour,
                                                     reward_config)
+                    
+                    final_obs_dict = update_combined_dict(obs_dict, final_obs_dict)
+                    append_observations(final_obs_dict, final_log_dict)
 
                     window_power = sum(obs_dict['window_fan_energies'])
                     hvac_power = sum(obs_dict['total_electricity_HVACs'])
@@ -499,6 +519,9 @@ def train(config=None):
                     final_val_power_list.append(total_power * joules_to_kwh)
                     final_val_temp_viol_list.append(temp_viol_percentage)
                     final_val_co2_viol_list.append(co2_viol_percentage)
+                    
+                    model_name = "dqn_co2_{:.0f}_temp_{:.0f}_lr_{:.0e}".format( co2_weight*100, temp_weight*100, learning_rate)
+                    save_observations_to_csv(final_log_dict, model_name, directory=experiment_save_dir, epoch=num_episodes + 1)
                     pbar.set_postfix({
                         "ValR": f"{(final_val_total_reward / (i+1)).item():.1f}",
                         "Pwr": f"{np.mean(final_val_power_list):.1f}",
@@ -526,77 +549,77 @@ def train(config=None):
             })
 
             
-# Create experiment save dir
-train_season = "hot"
-current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")
-ENV_ID ="A403medium"             
-unique_experiment_name = f"{train_season}_{ENV_ID}_train_{current_date}"
-experiment_save_dir_name = "results/dqn/" + unique_experiment_name
-if not os.path.exists(experiment_save_dir_name):
-    os.makedirs(experiment_save_dir_name)
+# # Create experiment save dir
+# train_season = "hot"
+# current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")
+# ENV_ID ="A403medium"             
+# unique_experiment_name = f"{train_season}_{ENV_ID}_train_{current_date}"
+# experiment_save_dir_name = "results/dqn/" + unique_experiment_name
+# if not os.path.exists(experiment_save_dir_name):
+#     os.makedirs(experiment_save_dir_name)
 
 
-ENV_NAME = f"{ENV_ID}_{train_season}_128_64_MULTI_FAN" 
-ALGORITHM_NAME = "DQN"
-NUM_EPISODES = 8
+# ENV_NAME = f"{ENV_ID}_{train_season}_128_64_MULTI_FAN" 
+# ALGORITHM_NAME = "DQN"
+# NUM_EPISODES = 8
 
-name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
-sweep_config = {
-    'method': 'random' ,
-    'name' : name
-    }
-metric = {
-    'name': 'final_val_power_kWh_mean',
-    'goal': 'minimize'   
-    }
+# name= create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
+# sweep_config = {
+#     'method': 'random' ,
+#     'name' : name
+#     }
+# metric = {
+#     'name': 'final_val_power_kWh_mean',
+#     'goal': 'minimize'   
+#     }
 
-parameters_dict = {
-    'learning_rate': {
-        #'values': [3e-4,1e-3,3e-3]
-        'values': [3e-4]
-    },
-    'lambda_energy': {
-        'values': [1/1_600_000]
-    },
-    # 'energy_weight': {
-    #     'values': [1,2]
-    'co2_weight': {
-        'min': 0.33,
-        'max': 0.50,
-    },
-    'temp_weight': {
-        ## When temp is 1 energy be from 1 to 3. Which means temp weight can be from 0.25 to 0.50
-        'min': 0.20,
-        'max': 0.50,
-    },
-    'experiment_save_dir': {
-        'value': experiment_save_dir_name
-    },
-    'train_season': {
-        'value': train_season
-    },
-    'agent_count': {
-        'value': 10
-    },
-    'num_episodes': {
-        'value': NUM_EPISODES
-    },
-    'env_id': {
-        'value': ENV_ID
-    },
-}
-sweep_config['parameters'] = parameters_dict
-sweep_config['metric'] = metric
+# parameters_dict = {
+#     'learning_rate': {
+#         #'values': [3e-4,1e-3,3e-3]
+#         'values': [3e-4]
+#     },
+#     'lambda_energy': {
+#         'values': [1/1_600_000]
+#     },
+#     # 'energy_weight': {
+#     #     'values': [1,2]
+#     'co2_weight': {
+#         'min': 0.33,
+#         'max': 0.50,
+#     },
+#     'temp_weight': {
+#         ## When temp is 1 energy be from 1 to 3. Which means temp weight can be from 0.25 to 0.50
+#         'min': 0.20,
+#         'max': 0.50,
+#     },
+#     'experiment_save_dir': {
+#         'value': experiment_save_dir_name
+#     },
+#     'train_season': {
+#         'value': train_season
+#     },
+#     'agent_count': {
+#         'value': 10
+#     },
+#     'num_episodes': {
+#         'value': NUM_EPISODES
+#     },
+#     'env_id': {
+#         'value': ENV_ID
+#     },
+# }
+# sweep_config['parameters'] = parameters_dict
+# sweep_config['metric'] = metric
 
 
-config_save_path = os.path.join(experiment_save_dir_name, "parameters_config.json")
-with open(config_save_path, "w") as f:
-    json.dump(parameters_dict, f, indent=4)
-print(f"Parameters saved to {config_save_path}")
+# config_save_path = os.path.join(experiment_save_dir_name, "parameters_config.json")
+# with open(config_save_path, "w") as f:
+#     json.dump(parameters_dict, f, indent=4)
+# print(f"Parameters saved to {config_save_path}")
 
-sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
-wandb.agent(sweep_id, train, count=parameters_dict['agent_count']['value'])
+# sweep_id = wandb.sweep(sweep_config, project="A403-Train",entity="mehmetbh")
+# wandb.agent(sweep_id, train, count=parameters_dict['agent_count']['value'])
 
-#Close the agent
+# #Close the agent
 
-wandb.finish()
+# wandb.finish()
