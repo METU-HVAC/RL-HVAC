@@ -307,7 +307,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
 def train(config=None):
     with wandb.init(config=config):
         config = wandb.config
-        
+        os.makedirs(config.experiment_save_dir, exist_ok=True)
         seed = 42  # Set seed for reproducibility
         # Set seeds for reproducibility
         random.seed(seed)

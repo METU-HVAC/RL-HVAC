@@ -86,7 +86,9 @@ def main():
             "parameters": {
                     'learning_rate': {
                         #'values': [3e-4,1e-3,3e-3]
-                        'values': [3e-4]
+                        #'values': [3e-4]
+                        'min': 1e-4,
+                        'max': 3e-3,
                     },
                     'lambda_energy': {
                         'values': [1/1_600_000]
@@ -96,13 +98,13 @@ def main():
                         'max': 0.99,
                     },
                     'co2_weight': {
-                        'min': 0.30,
-                        'max': 0.45,
+                        'min': 0.10,
+                        'max': 0.90,
                     },
                     'temp_weight': {
                         ## When temp is 1 energy be from 1 to 3. Which means temp weight can be from 0.25 to 0.50
-                        'min': 0.35,
-                        'max': 0.50,
+                        'min': 0.10,
+                        'max': 0.90,
                     },
                     'experiment_save_dir': {
                         'value': experiment_save_dir_name
@@ -111,7 +113,7 @@ def main():
                         'value': train_season
                     },
                     'agent_count': {
-                        'value': 20
+                        'value': 40
                     },
                     'num_episodes': {
                         'value': NUM_EPISODES
