@@ -209,6 +209,7 @@ def train(config=None):
         learning_rate = config.learning_rate
         experiment_save_dir = config.experiment_save_dir
         env_id = config.env_id
+        layer_sizes = config.layer_sizes
         
         # if [config.energy_weight, config.co2_weight, config.temp_weight].count(2) != 1:
         #     print(f"Invalid combination: energy={config.energy_weight}, CO2={config.co2_weight}, temp={config.temp_weight}. Only one value should be 2.")
@@ -237,7 +238,8 @@ def train(config=None):
             "eps_decay": 5,
             "tau": 0.005,
             "lr":learning_rate,
-            "memory_capacity": 300000
+            "memory_capacity": 300000,
+            "layer_sizes": layer_sizes,
         }
         agent = DQNAgent(state_size, action_size,total_training_steps,training_config)
         best_val_reward = -float('inf')

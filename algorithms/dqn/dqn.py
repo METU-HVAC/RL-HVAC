@@ -21,14 +21,15 @@ DQN_CONFIG = {
     "eps_decay": 5,
     "tau": 0.005,
     "lr": 1e-3,
-    "memory_capacity": 100000
+    "memory_capacity": 100000,
+    "layer_sizes": [128, 64],
 }
     
 class DQNAgent:
     
     def __init__(self, n_observations, n_actions, total_training_steps,config=DQN_CONFIG):
-        self.policy_net = DQN(n_observations, n_actions).to(device)
-        self.target_net = DQN(n_observations, n_actions).to(device)
+        self.policy_net = DQN(n_observations, n_actions,config["layer_sizes"]).to(device)
+        self.target_net = DQN(n_observations, n_actions,config["layer_sizes"]).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=config["lr"],amsgrad=True)

@@ -34,7 +34,7 @@ def main():
     # Create experiment save dir
     train_season = "hot"
     ENV_ID ="A403medium"
-    NUM_EPISODES = 2             
+    NUM_EPISODES = 10             
     unique_experiment_name = f"{train_season}_{ENV_ID}_train_{timestamp}"
    
     experiment_save_dir_name = os.path.join(run_dir, "results", args.algorithm, unique_experiment_name)
@@ -64,6 +64,7 @@ def main():
                     'train_season': {'value': train_season},
                     'agent_count': {'value': 40},
                     'num_episodes': {'value': NUM_EPISODES},
+                    'layer_sizes': {'values': [[128, 64]]},
                     'env_id': {'value': ENV_ID},
                 }
         }
