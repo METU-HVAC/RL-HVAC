@@ -333,22 +333,27 @@ def train(config=None):
         }
 
         # Generate and split chunks
-        chunks = generate_chunks(start_date, days_per_chunk, total_days,step_size=days_per_chunk,seasons=[config.train_season])
+
+        #Validation chunks is hot for now.
+
+        mixed_chunks = generate_chunks(start_date, days_per_chunk, total_days, step_size=days_per_chunk, seasons=["mixed"])
+        cool_chunks = generate_chunks(start_date, days_per_chunk, total_days,step_size=days_per_chunk,seasons=["cool"])
+        hot_chunks = generate_chunks(start_date, days_per_chunk, total_days,step_size=days_per_chunk,seasons=["hot"])
+
         #train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.1, val_ratio=0.1,seed=seed)
-        train_chunks, val_chunks, test_chunks = balanced_month_sample(chunks, val_chunks_per_month=1, seed=seed)
+        mixed_train_chunks, _, test_chunks = balanced_month_sample(mixed_chunks, val_chunks_per_month=1, seed=seed)
+        cool_train_chunks, _, _ = balanced_month_sample(cool_chunks, val_chunks_per_month=1, seed=seed)
+        hot_train_chunks, val_chunks, _ = balanced_month_sample(hot_chunks, val_chunks_per_month=1, seed=seed)
+
+        train_chunks = mixed_train_chunks  + hot_train_chunks #+ cool_train_chunks
+
         num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
         total_number_of_training_chunks = len(train_chunks)
         total_number_of_test_chunks = len(test_chunks)
 
         total_training_steps = total_number_of_training_chunks * num_episodes*steps_per_chunk
-        total_testing_steps = total_number_of_test_chunks * num_episodes*steps_per_chunk
         current_training_step = 0
         
-        # total_weight = config.temp_weight + config.co2_weight + config.energy_weight
-        # energy_weight = config.energy_weight / total_weight
-        # co2_weight = config.co2_weight / total_weight
-        # temp_weight = config.temp_weight / total_weight
-        #energy_weight, co2_weight, temp_weight = config.normalized_weights_ect
         co2_weight = config.co2_weight
         temp_weight = config.temp_weight
         fan_energy_weight = 1 - co2_weight
@@ -360,10 +365,6 @@ def train(config=None):
         env_id = config.env_id
         layer_sizes = config.layer_sizes
         
-        # if [config.energy_weight, config.co2_weight, config.temp_weight].count(2) != 1:
-        #     print(f"Invalid combination: energy={config.energy_weight}, CO2={config.co2_weight}, temp={config.temp_weight}. Only one value should be 2.")
-        #     wandb.finish()
-        #     return
         reward_config = {
             'temperature_variables': ['air_temperature'],
             'co2_variable': 'air_co2',

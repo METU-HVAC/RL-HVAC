@@ -46,7 +46,12 @@ def main():
     ALGORITHM_NAME = args.algorithm.upper()
     
     name = create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
-    
+    if args.algorithm == "madqn":
+        layer_sizes = [[64, 64]]
+    elif args.algorithm == "dqn":
+        layer_sizes = [[128, 64]]
+    else:
+        raise ValueError("Unsupported algorithm")
     if args.sweep_id is None:
         # Build your sweep config dict however you like:
         sweep_config = {
@@ -64,7 +69,7 @@ def main():
                     'train_season': {'value': train_season},
                     'agent_count': {'value': 40},
                     'num_episodes': {'value': NUM_EPISODES},
-                    'layer_sizes': {'values': [[128, 64]]},
+                    'layer_sizes': {'values': layer_sizes},
                     'env_id': {'value': ENV_ID},
                 }
         }
