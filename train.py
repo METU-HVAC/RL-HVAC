@@ -34,7 +34,7 @@ def main():
     # Create experiment save dir
     train_season = "hot"
     ENV_ID ="A403medium"
-    NUM_EPISODES = 10             
+    NUM_EPISODES = 20             
     unique_experiment_name = f"{train_season}_{ENV_ID}_train_{timestamp}"
    
     experiment_save_dir_name = os.path.join(run_dir, "results", args.algorithm, unique_experiment_name)
@@ -47,9 +47,9 @@ def main():
     
     name = create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
     if args.algorithm == "madqn":
-        layer_sizes = [[64, 64],[128,64],[128,128]]
+        layer_sizes = [[64, 64],[128,64],[128,128], [256, 128], [256, 256]]
     elif args.algorithm == "dqn":
-        layer_sizes = [[128, 64]]
+        layer_sizes = [[64, 64],[128,64],[128,128], [256, 128], [256, 256]]
     else:
         raise ValueError("Unsupported algorithm")
     if args.sweep_id is None:
@@ -61,7 +61,7 @@ def main():
             "metric": {"name": "final_val_power_kWh_mean", "goal": "minimize"},
             "parameters": {
                     'learning_rate': {'min': 1e-3,'max': 3e-3},
-                    'lambda_energy': {'values': [1/1_600_000]},
+                    'lambda_energy': {'values': [1/2_000_000]},
                     'gamma': {'min': 0.8,'max': 0.99},
                     'co2_weight': {'min': 0.20,'max': 0.40},
                     'temp_weight': {'min': 0.10,'max': 0.50},
