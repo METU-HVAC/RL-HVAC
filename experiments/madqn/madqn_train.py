@@ -364,7 +364,7 @@ def train(config=None):
         experiment_save_dir = config.experiment_save_dir
         env_id = config.env_id
         layer_sizes = config.layer_sizes
-        
+        memory_capacity = config.memory_capacity
         reward_config = {
             'temperature_variables': ['air_temperature'],
             'co2_variable': 'air_co2',
@@ -388,7 +388,7 @@ def train(config=None):
             "eps_decay": 5,
             "tau": 0.005,
             "lr":learning_rate,
-            "memory_capacity": 300000,
+            "memory_capacity": memory_capacity,
             "layer_sizes": layer_sizes,
         }
         fan_agent = DQNAgent(5, 4,total_training_steps,training_config)

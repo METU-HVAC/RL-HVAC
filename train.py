@@ -71,6 +71,7 @@ def main():
                     'num_episodes': {'value': NUM_EPISODES},
                     'layer_sizes': {'values': layer_sizes},
                     'env_id': {'value': ENV_ID},
+                    'memory_capacity': {'values': [100_000, 300_000, 600_000]},
                 }
         }
         sweep_id = wandb.sweep(sweep_config, project=args.project, entity=args.entity)
