@@ -47,7 +47,7 @@ def main():
     
     name = create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
     if args.algorithm == "madqn":
-        layer_sizes = [[64, 64]]
+        layer_sizes = [[64, 64],[128,64],[128,128]]
     elif args.algorithm == "dqn":
         layer_sizes = [[128, 64]]
     else:
@@ -60,11 +60,11 @@ def main():
             "name": name,
             "metric": {"name": "final_val_power_kWh_mean", "goal": "minimize"},
             "parameters": {
-                    'learning_rate': {'min': 1e-4,'max': 3e-3},
+                    'learning_rate': {'min': 1e-3,'max': 3e-3},
                     'lambda_energy': {'values': [1/1_600_000]},
                     'gamma': {'min': 0.8,'max': 0.99},
-                    'co2_weight': {'min': 0.10,'max': 0.90},
-                    'temp_weight': {'min': 0.10,'max': 0.90,},
+                    'co2_weight': {'min': 0.20,'max': 0.40},
+                    'temp_weight': {'min': 0.10,'max': 0.50},
                     'experiment_save_dir': {'value': experiment_save_dir_name},
                     'train_season': {'value': train_season},
                     'agent_count': {'value': 40},

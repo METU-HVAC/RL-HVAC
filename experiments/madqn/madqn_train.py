@@ -345,7 +345,7 @@ def train(config=None):
         cool_train_chunks, _, _ = balanced_month_sample(cool_chunks, val_chunks_per_month=1, seed=seed)
         hot_train_chunks, val_chunks, _ = balanced_month_sample(hot_chunks, val_chunks_per_month=1, seed=seed)
 
-        train_chunks = mixed_train_chunks  + hot_train_chunks #+ cool_train_chunks
+        train_chunks = hot_train_chunks
 
         num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
         total_number_of_training_chunks = len(train_chunks)
