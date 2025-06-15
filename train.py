@@ -8,7 +8,7 @@ import wandb
 # import warnings
 # warnings.filterwarnings("ignore", message=".*Casting input x to numpy array.*")
 
-from experiments.madqn import madqn_train
+from experiments.madqn import madqn_train_future
 from experiments.dqn import dqn_train 
 from utils.experiment_utils import create_experiment_name
 def parse_args():
@@ -34,7 +34,7 @@ def main():
     # Create experiment save dir
     train_season = "hot"
     ENV_ID ="A403medium"
-    NUM_EPISODES = 20             
+    NUM_EPISODES = 10             
     unique_experiment_name = f"{train_season}_{ENV_ID}_train_{timestamp}"
    
     experiment_save_dir_name = os.path.join(run_dir, "results", args.algorithm, unique_experiment_name)
@@ -47,7 +47,7 @@ def main():
     
     name = create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
     if args.algorithm == "madqn":
-        layer_sizes = [[64, 64],[128,64],[128,128], [256, 128], [256, 256]]
+        layer_sizes = [[128,64],[128,128], [256, 128], [256, 256]]
     elif args.algorithm == "dqn":
         layer_sizes = [[64, 64],[128,64],[128,128], [256, 128], [256, 256]]
     else:
@@ -87,7 +87,7 @@ def main():
         return
     
     if args.algorithm == "madqn":
-        train_func = madqn_train.train
+        train_func = madqn_train_future.train
     elif args.algorithm == "dqn":
         train_func = dqn_train.train
     else:

@@ -264,6 +264,13 @@ obs_mins = [
     np.float32(400.0), # air_co2
     np.float32(0.0), # window fan energy
     np.float32(0.0)  , # total electricity HVAC
+    
+    
+    ##Froecasted
+    np.float32(-25.0), # outdoor temperatures
+    np.float32(0.0), # people occupant
+    np.float32(-25.0), # outdoor temperatures
+    np.float32(0.0), # people occupant
 ] 
 obs_maxs = [
     np.float32(12.0),# month
@@ -278,7 +285,13 @@ obs_maxs = [
     np.float32(9.6), # people occupant
     np.float32(3000.0), # air_co2
     np.float32(20250.0), # window fan energy
-    np.float32(2000000.0) # total electricity HVAC
+    np.float32(2000000.0), # total electricity HVAC
+    
+    ##Froecasted
+    np.float32(50.0),# outdoor temperatures
+    np.float32(9.6), # people occupant
+    np.float32(9.6), # people occupant
+    np.float32(100.0), # outdoor humidity
 ]
 def min_max_normalize(obs, min_vals, max_vals):
     if isinstance(obs, torch.Tensor):
