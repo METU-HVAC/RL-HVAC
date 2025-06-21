@@ -252,12 +252,20 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
             ac_agent.store_transition(hvac_obs_tensor, hvac_action, next_hvac_obs_tensor, hvac_reward)
             # Train DQN every few steps if buffer size is sufficient
             if current_step % train_interval == 0:
-                fan_loss = fan_agent.optimize_model()
-                hvac_loss = ac_agent.optimize_model()
-                if fan_loss is not None:
-                    loss_log["WindowFan"].append(fan_loss)
-                if hvac_loss is not None:
-                    loss_log["HVAC"].append(hvac_loss)
+                fan_losses = []
+                hvac_losses = []
+                for _ in range(2):
+                    fan_loss = fan_agent.optimize_model()
+                    hvac_loss = ac_agent.optimize_model()
+                    if fan_loss is not None:
+                        fan_losses.append(fan_loss)
+                    if hvac_loss is not None:
+                        hvac_losses.append(hvac_loss)
+
+                if len(fan_losses) > 0:
+                    loss_log["WindowFan"].append(sum(fan_losses) / len(fan_losses))
+                if len(hvac_losses) > 0:
+                    loss_log["HVAC"].append(sum(hvac_losses) / len(hvac_losses))
             #next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
         elif episode_type == "Validation":
             #Log the rewards at each timestep
@@ -315,11 +323,9 @@ def train(config=None):
         torch.manual_seed(seed)
 
         remove_previous_run_logs()
-                
-        state_size =  10 # Adjust based on the size of your observation space
-        action_size = 6  
-        train_interval = 200 # Train every n steps
-        timesteps_per_hour = 6  # 10-minute intervals
+
+        train_interval = 96 # Train every n steps. Which is 96 steps for 15 minute intervals, which is 24 hours.
+        timesteps_per_hour = 4  # 15-minute intervals
         days_per_chunk = 8
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
@@ -426,8 +432,15 @@ def train(config=None):
                                                                             train_interval,
                                                                             timesteps_per_hour,
                                                                             reward_config)
-                    total_fan_loss_list.append(sum(loss_logs["WindowFan"])/len(loss_logs["WindowFan"]))
-                    total_ac_loss_list.append(sum(loss_logs["HVAC"])/len(loss_logs["HVAC"]))
+                    if loss_logs["WindowFan"]:
+                        total_fan_loss_list.append(sum(loss_logs["WindowFan"]) / len(loss_logs["WindowFan"]))
+                    else:
+                        total_fan_loss_list.append(None)  # or 0.0, depending on your use case
+
+                    if loss_logs["HVAC"]:
+                        total_ac_loss_list.append(sum(loss_logs["HVAC"]) / len(loss_logs["HVAC"]))
+                    else:
+                        total_ac_loss_list.append(None)  # or 0.0
                     train_obs_dict = update_combined_dict(obs_dict, train_obs_dict)
                     train_total_fan_reward += rewards["WindowFan"]
                     train_total_ac_reward += rewards["HVAC"]

@@ -250,7 +250,7 @@ keys_of_interest = [
     "htg_setpoints", "clg_setpoints", "air_temperatures", "air_humidities",
     "people_occupants", "air_co2s", "window_fan_energies", "total_electricity_HVACs"
 ]
-obs_mins = [
+obs_mins_future = [
     np.float32(1.0), # month
     np.float32(1.0), #day of month
     np.float32(0.0), # hour
@@ -272,7 +272,22 @@ obs_mins = [
     np.float32(-25.0), # outdoor temperatures
     np.float32(0.0), # people occupant
 ] 
-obs_maxs = [
+obs_mins = [
+    np.float32(1.0), # month
+    np.float32(1.0), #day of month
+    np.float32(0.0), # hour
+    np.float32(-25.0), # outdoor temperatures
+    np.float32(0.0), # outdoor humidity
+    np.float32(5.0),# heating setpoint
+    np.float32(23.0),# cooling setpoint
+    np.float32(-20.0), # air temperature
+    np.float32(0.0), # air humidity
+    np.float32(0.0), # people occupant
+    np.float32(400.0), # air_co2
+    np.float32(0.0), # window fan energy
+    np.float32(0.0)  , # total electricity HVAC
+] 
+obs_maxs_future = [
     np.float32(12.0),# month
     np.float32(31.0),#day of month
     np.float32(23.0),# hour
@@ -292,6 +307,21 @@ obs_maxs = [
     np.float32(9.6), # people occupant
     np.float32(9.6), # people occupant
     np.float32(100.0), # outdoor humidity
+]
+obs_maxs = [
+    np.float32(12.0),# month
+    np.float32(31.0),#day of month
+    np.float32(23.0),# hour
+    np.float32(50.0),# outdoor temperatures
+    np.float32(100.0), # outdoor humidity
+    np.float32(23.0), # heating setpoint
+    np.float32(50.0), # cooling setpoint
+    np.float32(50.0),  # air temperature
+    np.float32(100.0),  # air humidity
+    np.float32(9.6), # people occupant
+    np.float32(3000.0), # air_co2
+    np.float32(20250.0), # window fan energy
+    np.float32(2000000.0), # total electricity HVAC
 ]
 def min_max_normalize(obs, min_vals, max_vals):
     if isinstance(obs, torch.Tensor):

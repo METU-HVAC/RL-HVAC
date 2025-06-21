@@ -36,7 +36,8 @@ class DQNAgent:
         #self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=total_training_steps/10, gamma=0.95)
         # Initialize a learning rate scheduler (StepLR example)
         self.scheduler = StepLR(self.optimizer, step_size=1, gamma=0.95)  # Reduce LR by 0.1 every epochs
-        self.memory = ReplayMemory(config["memory_capacity"])
+        self.memory_capacity = config["memory_capacity"]
+        self.memory = ReplayMemory(self.memory_capacity)
         self.steps_done = 0
         self.n_actions = n_actions
 
@@ -78,7 +79,7 @@ class DQNAgent:
         
 
     def optimize_model(self):
-        if len(self.memory) < self.batch_size * 5:
+        if len(self.memory) < self.memory_capacity * 0.1:
             return
 
         transitions = self.memory.sample(self.batch_size)

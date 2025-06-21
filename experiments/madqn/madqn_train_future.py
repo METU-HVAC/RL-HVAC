@@ -120,7 +120,7 @@ def get_agent_observation_dict_based(agent_name: str, observation: List[float], 
 
     if agent_name == "WindowFan":
         keys = ['hour', 'air_co2', 'window_fan_energy', 'people_occupant','weekday',
-                'outdoor_temperature_future_1','people_occupant_future_1','outdoor_temperature_future_2','people_occupant_future_2']
+                'people_occupant_future_1','people_occupant_future_2']
     elif agent_name == "HVAC":
         keys = ['hour','outdoor_temperature','air_temperature', 'people_occupant', 'window_fan_speed', 'is_summer','weekday', 'total_electricity_HVAC',
                 'outdoor_temperature_future_1','people_occupant_future_1','outdoor_temperature_future_2','people_occupant_future_2']
@@ -248,7 +248,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
     augmented_state = augment_state_with_future(state, env, predictor, current_step, timesteps_per_hour, device)
     while current_step < steps_per_chunk:
         
-        normalized_state = torch.tensor(min_max_normalize(augmented_state, obs_mins, obs_maxs),
+        normalized_state = torch.tensor(min_max_normalize(augmented_state, obs_mins_future, obs_maxs_future),
                                         dtype=torch.float32, device=device)
         
         #normalized_reduced_state = torch.tensor(normalized_reduced_state, dtype=torch.float32, device=device)
@@ -434,7 +434,7 @@ def train(config=None):
             "memory_capacity": memory_capacity,
             "layer_sizes": layer_sizes,
         }
-        fan_agent = DQNAgent(9, 4,total_training_steps,training_config)
+        fan_agent = DQNAgent(7, 4,total_training_steps,training_config)
         ac_agent = DQNAgent(12, 3,total_training_steps,training_config)
         best_ac_val_reward = -float('inf')
         best_fan_val_reward = -float('inf')
