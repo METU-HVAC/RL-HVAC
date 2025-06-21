@@ -435,12 +435,12 @@ def train(config=None):
                     if loss_logs["WindowFan"]:
                         total_fan_loss_list.append(sum(loss_logs["WindowFan"]) / len(loss_logs["WindowFan"]))
                     else:
-                        total_fan_loss_list.append(None)  # or 0.0, depending on your use case
+                        total_fan_loss_list.append(0.0)  # or 0.0, depending on your use case
 
                     if loss_logs["HVAC"]:
                         total_ac_loss_list.append(sum(loss_logs["HVAC"]) / len(loss_logs["HVAC"]))
                     else:
-                        total_ac_loss_list.append(None)  # or 0.0
+                        total_ac_loss_list.append(0.0)  # or 0.0
                     train_obs_dict = update_combined_dict(obs_dict, train_obs_dict)
                     train_total_fan_reward += rewards["WindowFan"]
                     train_total_ac_reward += rewards["HVAC"]
