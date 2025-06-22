@@ -34,7 +34,7 @@ def main():
     # Create experiment save dir
     train_season = "hot"
     ENV_ID ="A403medium"
-    NUM_EPISODES = 15             
+    NUM_EPISODES = 10             
     unique_experiment_name = f"{train_season}_{ENV_ID}_train_{timestamp}"
    
     experiment_save_dir_name = os.path.join(run_dir, "results", args.algorithm, unique_experiment_name)
@@ -62,14 +62,14 @@ def main():
             "parameters": {
                     'learning_rate': {'value': 1e-3},
                     'lambda_energy': {'value': 1/2_000_000},
-                    'gamma': {'value': 0.95},
-                    'co2_weight': {'values': [0.20,0.30,0.40]},
-                    'temp_weight': {'values': [0.10,0.25,0.50]},
+                    'gamma': {'value': 0.90},
+                    'co2_weight': {'values': [0.25,0.30,0.35]}, # 0.2 yapma
+                    'temp_weight': {'values': [0.40,0.50,0.60]},
                     'experiment_save_dir': {'value': experiment_save_dir_name},
                     'train_season': {'value': train_season},
                     'agent_count': {'value': 9},
                     'num_episodes': {'value': NUM_EPISODES},
-                    'layer_sizes': {'value': [256,256,256]},
+                    'layer_sizes': {'value': [128,128]},
                     'env_id': {'value': ENV_ID},
                     'memory_capacity': {'value': 52600},
                 }

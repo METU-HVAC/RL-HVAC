@@ -324,7 +324,7 @@ def train(config=None):
 
         remove_previous_run_logs()
 
-        train_interval = 96 # Train every n steps. Which is 96 steps for 15 minute intervals, which is 24 hours.
+        train_interval = 96*2 # Train every n steps. Which is 96 steps for 15 minute intervals, which is 24 hours.
         timesteps_per_hour = 4  # 15-minute intervals
         days_per_chunk = 8
         timestep_per_day = timesteps_per_hour * 24

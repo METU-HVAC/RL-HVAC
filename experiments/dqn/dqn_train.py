@@ -123,14 +123,14 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
         next_obs_tensor = torch.tensor(next_obs, dtype=torch.float32, device=device).unsqueeze(0)
     
         if episode_type == "Training":
-
             agent.store_transition(combined_obs_tensor, action, next_obs_tensor, reward)
             # Train DQN every few steps if buffer size is sufficient
             if current_step % train_interval == 0:
                 # Perform one step of the optimization (on the policy network)
-                loss = agent.optimize_model()
-                if loss is not None:
-                    loss_list.append(loss)
+                for _ in range(2):
+                    loss = agent.optimize_model()
+                    if loss is not None:
+                        loss_list.append(loss)
             #next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
         state = next_state
             
@@ -169,7 +169,7 @@ def train(config=None):
                 
         state_size =  11 # Adjust based on the size of your observation space
         action_size = 12  
-        train_interval = 200 # Train every n steps
+        train_interval = 96*2 # Train every n steps
         timesteps_per_hour = 4  # 15-minute intervals
         days_per_chunk = 8
         timestep_per_day = timesteps_per_hour * 24
