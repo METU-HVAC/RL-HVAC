@@ -39,6 +39,7 @@ class FutureObservationProvider:
             future_observations.append({
                 'time': row['time'],
                 'outdoor_temperature': row['outdoor_temperature'],
+                'outdoor_humidity': row['outdoor_humidity'],
                 'people_occupant': row['people_occupant'],
             })
 

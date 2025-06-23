@@ -89,6 +89,7 @@ while not done and step_count < 5:
     appended_features = []
     for obs in future_obs:
         appended_features.append(obs['outdoor_temperature'])
+        appended_features.append(obs['outdoor_humidity'])
         appended_features.append(obs['people_occupant'])
 
     # Debug print:

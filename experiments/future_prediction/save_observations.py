@@ -49,7 +49,7 @@ def run_random_simulation_and_log(env_id, start_date, end_date, season, timestep
     state, info = env.reset()
     current_step = 1
     # Define only the desired observation variables to log
-    selected_obs = ['outdoor_temperature', 'outdoor_humidity', 'people_occupant']
+    selected_obs = ['outdoor_temperature', 'people_occupant']
 
     # Prepare CSV
     os.makedirs(os.path.dirname(log_csv_path), exist_ok=True)
@@ -88,5 +88,5 @@ if __name__ == '__main__':
     season = 'hot'
     timesteps_per_hour = 6  # 10-minute resolution
 
-    log_path = './logs/whole_year.csv'
+    log_path = './logs/whole_year_2.csv'
     run_random_simulation_and_log(env_id, start_date, end_date, season, timesteps_per_hour, log_path)
