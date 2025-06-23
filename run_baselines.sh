@@ -13,11 +13,18 @@ PYTHON="/home/mehmetbh/workspace/RL-Paper/venv/bin/python"
 SCRIPT="/home/mehmetbh/workspace/RL-Paper/experiments/baselines/baseline_test.py"
 # please use FULL WINDOW FAN CONTROL
 # Define parameter lists.
-rooms=("A403medium")
+rooms=("A403mediumwindow")
 # seasons=("hot" "cool" "mixed")
 seasons=("hot")
-# algorithms=("setpoint" "on_off" "window_on_off" "window_schedule")
-algorithms=("multispeed_setpoint")
+# algorithms=("setpoint05" "setpoint075" "setpoint1"
+#             "on_off05" "on_off075" "on_off1"
+#             "window_on_off" "window_schedule"
+#             "multispeed_setpoint")
+
+algorithms=(
+            "window_on_off" "window_schedule"
+            )
+#algorithms=("multispeed_setpoint")
 # Loop through each combination and run the test sequentially.
 for room in "${rooms[@]}"; do
     for season in "${seasons[@]}"; do

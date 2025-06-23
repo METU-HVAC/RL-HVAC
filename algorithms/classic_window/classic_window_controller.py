@@ -7,12 +7,17 @@ class WindowOnOffController():
     '''
     def __init__(self):
         self.is_open = False
-        self.summer_hvac_on_co2_off = 16
-        self.summer_hvac_on_co2_on = 17
-        self.winter_hvac_on_co2_off = 10
-        self.winter_hvac_on_co2_on = 11
+    
 
-        self.off_action = 18
+        
+        
+        
+        self.summer_hvac_on_co2_off = 32
+        self.summer_hvac_on_co2_on = 33
+        self.winter_hvac_on_co2_off = 20
+        self.winter_hvac_on_co2_on = 21
+
+        self.off_action = 36
         #Hvac on -off co2 on 
     def select_action(self, state, current_step, timesteps_per_hour):
         '''
@@ -50,11 +55,12 @@ class WindowScheduleController():
     """
     def __init__(self):
         self.is_open = False
-        self.summer_hvac_on_co2_on = 17
-        self.summer_hvac_on_co2_off = 16
-        self.winter_hvac_on_co2_off = 10
-        self.winter_hvac_on_co2_on = 11
-        self.off_action = 18
+        self.summer_hvac_on_co2_off = 32
+        self.summer_hvac_on_co2_on = 33
+        self.winter_hvac_on_co2_off = 20
+        self.winter_hvac_on_co2_on = 21
+
+        self.off_action = 36
         self.last_occupation_time = None  # To track when occupation started
 
     def select_action(self, state, current_step, timesteps_per_hour):
@@ -98,7 +104,8 @@ class WindowScheduleController():
                 debug_msg = f"[{season.capitalize()} | Window CLOSED]"
 
         # --- 3) Print & flush so you definitely see it ----
-        print(f"{time_label} | Occ={occupancy} → {debug_msg} | Action={selected_action}", flush=True)
-        sys.stdout.flush()
+        # print(f"{time_label} | Occ={occupancy} → {debug_msg} | Action={selected_action}", flush=True)
+        # sys.stdout.flush()
 
         return selected_action
+    
