@@ -27,7 +27,7 @@ DQN_CONFIG = {
     
 class DQNAgent:
     
-    def __init__(self, n_observations, n_actions, total_training_steps,config=DQN_CONFIG):
+    def __init__(self, n_observations, n_actions, total_training_steps,num_of_episodes,config=DQN_CONFIG):
         self.policy_net = DQN(n_observations, n_actions,config["layer_sizes"]).to(device)
         self.target_net = DQN(n_observations, n_actions,config["layer_sizes"]).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -35,7 +35,9 @@ class DQNAgent:
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=config["lr"],amsgrad=True)
         #self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=total_training_steps/10, gamma=0.95)
         # Initialize a learning rate scheduler (StepLR example)
-        self.scheduler = StepLR(self.optimizer, step_size=1, gamma=0.95)  # Reduce LR by 0.1 every epochs
+        gamma = self.compute_gamma(config["lr"], config["lr"]/10, num_of_episodes)
+        #self.scheduler = StepLR(self.optimizer, step_size=1, gamma=gamma)  # Reduce LR by 0.1 every epochs
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=num_of_episodes, eta_min=config["lr"]/10)
         self.memory_capacity = config["memory_capacity"]
         self.memory = ReplayMemory(self.memory_capacity)
         self.steps_done = 0
@@ -51,6 +53,9 @@ class DQNAgent:
         self.total_training_steps = total_training_steps
         self.eps_threshold = 0
         self.log_timestep = 0
+    def compute_gamma(self,initial_lr, target_lr, num_steps):
+        gamma = (target_lr / initial_lr) ** (1 / num_steps)
+        return gamma
     def reduce_lr(self):
         self.scheduler.step()
     def store_transition(self,state,action,next_state,reward):

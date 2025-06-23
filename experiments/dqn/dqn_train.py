@@ -241,7 +241,7 @@ def train(config=None):
             "memory_capacity": 300000,
             "layer_sizes": layer_sizes,
         }
-        agent = DQNAgent(state_size, action_size,total_training_steps,training_config)
+        agent = DQNAgent(state_size, action_size,total_training_steps,num_episodes,training_config)
         best_val_reward = -float('inf')
         best_model_path = None
         for episode in range(1, num_episodes + 1):

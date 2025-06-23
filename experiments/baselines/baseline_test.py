@@ -116,8 +116,8 @@ def train(config=None):
                 
         state_size =  17 # Adjust based on the size of your observation space
         action_size = 20  
-        train_interval = 100 # Train every n steps
-        timesteps_per_hour = 6  # 10-minute intervals
+        train_interval = 96 # Train every n steps
+        timesteps_per_hour = 4  # 10-minute intervals
         days_per_chunk = 8
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
@@ -133,8 +133,8 @@ def train(config=None):
         # Generate and split chunks
         chunks = generate_chunks(start_date, days_per_chunk,total_days,step_size=days_per_chunk,seasons=[train_season])
         #train_chunks, val_chunks, test_chunks = stratified_train_val_split(chunks, train_ratio=0.8, val_ratio=0.2, seed=seed)
-        train_chunks, val_chunks, test_chunks =split_chunks(chunks, train_ratio=0.0, val_ratio=1.0, seed=seed)
-        #train_chunks, val_chunks, test_chunks = balanced_month_sample(chunks, val_chunks_per_month=1, seed=seed)
+        #train_chunks, val_chunks, test_chunks =split_chunks(chunks, train_ratio=0.0, val_ratio=1.0, seed=seed)
+        train_chunks, val_chunks, test_chunks = balanced_month_sample(chunks, val_chunks_per_month=1, seed=seed)
         num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
         experiment_save_dir = config.experiment_save_dir
         total_number_of_training_chunks = len(train_chunks)
@@ -149,10 +149,11 @@ def train(config=None):
             'energy_variables': ['total_electricity_HVAC', 'window_fan_energy'],
             'range_comfort_winter': (20.0, 23.5),
             'range_comfort_summer': (23.0, 26.0),
-            'energy_weight': 0.3,
             'co2_weight': 0.3,
+            'ac_energy_weight': 0.3,
+            'fan_energy_weight': 0.3,
             'temperature_weight': 0.3,
-            'lambda_energy': 1e-5,
+            'lambda_energy': 1/2_000_000,
             'lambda_temperature': 1.0,
             'lambda_co2': 1.0,
             'co2_threshold': 800,
@@ -176,7 +177,9 @@ def train(config=None):
         elif agent_name == "window_on_off":
             agent = WindowOnOffController()
         elif agent_name == "window_schedule":
-            agent = WindowScheduleController()    
+            agent = WindowScheduleController()
+        elif agent_name == "single_speed_ac_only":
+            agent = SingleSpeedACOnlyController()    
         
         for episode in range(1, num_episodes + 1):
             with tqdm(total=len(val_chunks), 

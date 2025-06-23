@@ -42,7 +42,7 @@ def main():
     if not os.path.exists(experiment_save_dir_name):
         os.makedirs(experiment_save_dir_name)
 
-    ENV_NAME = f"{ENV_ID}_{train_season}_MULTISPEED_FAN"
+    ENV_NAME = f"{ENV_ID}_{train_season}_MULTISPEED_FAN_COS_ANNEL"
     ALGORITHM_NAME = args.algorithm.upper()
     
     name = create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
@@ -55,19 +55,19 @@ def main():
     if args.sweep_id is None:
         # Build your sweep config dict however you like:
         sweep_config = {
-            "method": "grid",
+            "method": "random",
             "project": "A403-Train",
             "name": name,
             "metric": {"name": "final_val_power_kWh_mean", "goal": "minimize"},
             "parameters": {
                     'learning_rate': {'value': 1e-3},
                     'lambda_energy': {'value': 1/2_000_000},
-                    'gamma': {'value': 0.90},
-                    'co2_weight': {'values': [0.25,0.30,0.35]}, # 0.2 yapma
-                    'temp_weight': {'values': [0.40,0.50,0.60]},
+                    'gamma': {'values':  [0.90,0.95,0.99]}, # [0.90,0.95,0.99]
+                    'co2_weight': {'min':0.20,'max':0.60}, # 0.2 yapma 
+                    'temp_weight': {'min':0.20,'max':0.75}, #[0.40,0.50,0.60]
                     'experiment_save_dir': {'value': experiment_save_dir_name},
                     'train_season': {'value': train_season},
-                    'agent_count': {'value': 9},
+                    'agent_count': {'value': 80},
                     'num_episodes': {'value': NUM_EPISODES},
                     'layer_sizes': {'value': [128,128]},
                     'env_id': {'value': ENV_ID},
