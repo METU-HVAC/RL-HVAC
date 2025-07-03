@@ -37,30 +37,62 @@ reward_log = {
     "r_total": [],       # if you also want to store the total reward
 }
 all_action_map = {
-    0 : [21,23,1.0,0.0],
-    1 : [21,23,1.0,0.25],
-    2 : [21,23,1.0,0.50],
-    3 : [21,23,1.0,1.0],
-    4 : [23,26,1.0,0.0],
-    5 : [23,26,1.0,0.25],
-    6 : [23,26,1.0,0.50],
-    7 : [23,26,1.0,1.0],
-    8 : [5,50,0.0,0.0],
-    9 : [5,50,0.0,0.25],
-    10 : [5,50,0.0,0.50],
-    11 : [5,50,0.0,1.0]
+    0 : [19, 21, 0.5, 0.0],
+    1 : [19, 21, 0.5, 0.5],
+    2 : [19, 21, 0.5, 0.75],
+    3 : [19, 21, 0.5, 1.0],
+    4 : [19, 21, 0.75, 0.0],
+    5 : [19, 21, 0.75, 0.5],
+    6 : [19, 21, 0.75, 0.75],
+    7 : [19, 21, 0.75, 1.0],
+    8 : [19, 21, 1.0, 0.0],
+    9 : [19, 21, 1.0, 0.5],
+    10 : [19, 21, 1.0, 0.75],
+    11 : [19, 21, 1.0, 1.0],
+    12 : [21, 23, 0.5, 0.0],
+    13 : [21, 23, 0.5, 0.5],
+    14 : [21, 23, 0.5, 0.75],
+    15 : [21, 23, 0.5, 1.0],
+    16 : [21, 23, 0.75, 0.0],
+    17 : [21, 23, 0.75, 0.5],
+    18 : [21, 23, 0.75, 0.75],
+    19 : [21, 23, 0.75, 1.0],
+    20 : [21, 23, 1.0, 0.0],
+    21 : [21, 23, 1.0, 0.5],
+    22 : [21, 23, 1.0, 0.75],
+    23 : [21, 23, 1.0, 1.0],
+    24 : [23, 26, 0.5, 0.0],
+    25 : [23, 26, 0.5, 0.5],
+    26 : [23, 26, 0.5, 0.75],
+    27 : [23, 26, 0.5, 1.0],
+    28 : [23, 26, 0.75, 0.0],
+    29 : [23, 26, 0.75, 0.5],
+    30 : [23, 26, 0.75, 0.75],
+    31 : [23, 26, 0.75, 1.0],
+    32 : [23, 26, 1.0, 0.0],
+    33 : [23, 26, 1.0, 0.5],
+    34 : [23, 26, 1.0, 0.75],
+    35 : [23, 26, 1.0, 1.0],
+    36 : [5 , 50, 0.0, 0.0], # OFF ACTION FOR HVAC AND WINDOW FAN
+    37 : [5 , 50, 0.0, 0.5],
+    38 : [5 , 50, 0.0, 0.75],
+    39 : [5 , 50, 0.0, 1.0]
 }
 fan_map = {
     0: 0.0,   # Off
-    1: 0.25,  # Low
-    2: 0.5,   # Medium
+    1: 0.5,  # Low
+    2: 0.75,   # Medium
     3: 1.0    # High
 }
 
 hvac_map = {
     0: [5.0, 50.0, 0.0],     # Off
-    1: [23.0, 26.0, 1.0],    # Summer
-    2: [21.0, 23.0, 1.0]     # Winter
+    1: [23.0, 26.0, 0.5],    # Summer
+    2: [23.0, 26.0, 0.75],    # Summer
+    3: [23.0, 26.0, 1.0],    # Summer
+    4: [21.0, 23.0, 0.5],     # Winter
+    5: [21.0, 23.0, 0.75],     # Winter
+    6: [21.0, 23.0, 1.0],     # Winter
 }
 
 observation_variables = [
@@ -219,14 +251,16 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
         if episode_type == "Training":
             #action = agent.select_action(normalized_reduced_state)  # Epsilon-greedy action for training
             fan_action = fan_agent.select_action(fan_obs_tensor)
+            replaced_fan_action = 0 #Not working
             hvac_action = ac_agent.select_action(hvac_obs_tensor)
             
         else:
             #action = agent.choose_greedy_action(normalized_reduced_state)  # Greedy action for validation/testing
             fan_action = fan_agent.choose_greedy_action(fan_obs_tensor)
+            replaced_fan_action = 0 #Not working
             hvac_action = ac_agent.choose_greedy_action(hvac_obs_tensor)
             
-        combined_action = combine_actions(fan_action.item(), hvac_action.item(),
+        combined_action = combine_actions(replaced_fan_action, hvac_action.item(),
                                           all_action_map, fan_map, hvac_map)
              
         # Step in environment
@@ -398,7 +432,7 @@ def train(config=None):
             "layer_sizes": layer_sizes,
         }
         fan_agent = DQNAgent(5, 4,total_training_steps,num_episodes,training_config)
-        ac_agent = DQNAgent(8, 3,total_training_steps,num_episodes,training_config)
+        ac_agent = DQNAgent(8, 7,total_training_steps,num_episodes,training_config)
         best_ac_val_reward = -float('inf')
         best_fan_val_reward = -float('inf')
         best_ac_model_path = None

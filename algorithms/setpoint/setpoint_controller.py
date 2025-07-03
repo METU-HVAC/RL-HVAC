@@ -175,7 +175,7 @@ class SingleSpeedACOnlyController():
         
         self.window_fan_speed = window_fan_speed
 
-    def select_action(self, state,current_step,timesteps_per_hour):
+    def select_action(self, state,current_step=0,timesteps_per_hour=4):
         '''
         Act method for the controller
         '''

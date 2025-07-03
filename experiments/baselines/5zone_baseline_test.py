@@ -22,24 +22,13 @@ from utils.experiment_utils import *
 from tqdm import tqdm
 import wandb
 import pandas as pd
-## OBSERVATION SPACE 
-# {'month': np.float32(7.0), 'day_of_month': np.float32(10.0), 'hour': np.float32(0.0),
-#  'outdoor_temperature': np.float32(28.666666), 'outdoor_humidity': np.float32(36.666668), '
-# htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
-# 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
-# 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
-
-
 raw_observations = []
 log_val_dict = []
 def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
-    env = create_environment(env_id,start_date, end_date,season,CO2andTemperatureReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
+    env = create_environment(env_id,start_date, end_date,season,LinearReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
     OFF_ACTION = 0 #initially the the system is not working
-    state = append_fan_speed_to_observation(env,state,OFF_ACTION)
-
-    data = state
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     
     done = False
@@ -53,30 +42,23 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
     while current_step < steps_per_chunk:
         
         action = agent.select_action(state,current_step-1,timesteps_per_hour)
-        
-        #np_action = np.array([action], dtype=np.float32)  # Adjust dtype to match environment
-        
+                
         observation, reward, truncated, terminated, info = env.step(action)
-        observation = append_fan_speed_to_observation(env,observation,action)
 
         raw_observations.append(observation)
 
-        #observation, reward, truncated, terminated, info = env.step(action.item())
-        data = observation
         done = terminated or truncated
         reward = torch.tensor([reward],dtype=torch.float32, device=device)
         if done:
             next_state = None
         else:
             next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
-            #next_state = normalize_observation(next_state,obs_mean,obs_std_dev)
         state = next_state
 
         obs_dict = dict(zip(env.get_wrapper_attr('observation_variables'), observation))
-        
-        obs_dict = append_info_and_time_to_dict(obs_dict,info,current_step, timesteps_per_hour)
+
+        obs_dict = append_info_and_time_to_dict_5zone(obs_dict,info,current_step, timesteps_per_hour)
        
-        obs_dict = append_fan_speed_to_dict(obs_dict, DEFAULT_A403MEDIUMWINDOW_DISCRETE_FUNCTION(action)[3], DEFAULT_A403MEDIUMWINDOW_DISCRETE_FUNCTION(action)[2])
         all_obs_dict = add_observation(all_obs_dict, obs_dict)
         
         total_reward += reward
@@ -105,10 +87,10 @@ def train(config=None):
 
         remove_previous_run_logs()
                 
-        state_size =  19 # Adjust based on the size of your observation space
+        state_size =  17 # Adjust based on the size of your observation space
         action_size = 20  
         train_interval = 96 # Train every n steps
-        timesteps_per_hour = 4  # 10-minute intervals
+        timesteps_per_hour = 4  # 15-minute intervals
         days_per_chunk = 8
         timestep_per_day = timesteps_per_hour * 24
         steps_per_chunk = timestep_per_day * days_per_chunk
@@ -116,10 +98,6 @@ def train(config=None):
         total_days = 365
         train_season = config.train_season
 
-        extra_params = {
-            'timesteps_per_hour': timesteps_per_hour,
-            'runperiod':(1,1,1997,12,3,1997)  # Full year simulation
-        }
         env_id = config.env_id
         # Generate and split chunks
         chunks = generate_chunks(start_date, days_per_chunk,total_days,step_size=days_per_chunk,seasons=[train_season])
@@ -136,43 +114,20 @@ def train(config=None):
         current_training_step = 0
         reward_config = {
             'temperature_variables': ['air_temperature'],
-            'co2_variable': 'air_co2',
-            'energy_variables': ['total_electricity_HVAC', 'window_fan_energy'],
-            'range_comfort_winter': (20.0, 23.5),
+            'energy_variables':  ['total_electricity_HVAC'],
+            'range_comfort_winter':  (20.0, 23.5),
             'range_comfort_summer': (23.0, 26.0),
-            'ac_energy_weight': 0.3,
-            'fan_energy_weight': 0.3,
-            'co2_weight': 0.3,
-            'ac_energy_weight': 0.3,
-            'fan_energy_weight': 0.3,
-            'temperature_weight': 0.3,
-            'lambda_energy': 1/2_000_000, # 1/100.000
-            'lambda_temperature': 1.0,
-            'lambda_co2': 1.0,
-            'co2_threshold': 800,
+            'summer_start': (6, 1),
+            'summer_final': (9, 30),
+            'energy_weight': 0.5,
+            'lambda_energy': 1/1_600_000,
+            'lambda_temperature':  1.0
         }
 
         agent_name = config.agent
-        if agent_name == "setpoint05":
-            agent = SetpointController(window_fan_speed=0.5)
-        elif agent_name == "setpoint075":
-            agent = SetpointController(window_fan_speed=0.75)
-        elif agent_name == "setpoint1":
-            agent = SetpointController(window_fan_speed=1.0)
-        elif agent_name == "multispeed_setpoint":
-            agent = MultiSpeedSetpointController()
-        elif agent_name == "on_off05":  
-            agent = OnOffController(window_fan_speed=0.5)
-        elif agent_name == "on_off075":
-            agent = OnOffController(window_fan_speed=0.75)
-        elif agent_name == "on_off1":
-            agent = OnOffController(window_fan_speed=1.0)
-        elif agent_name == "window_on_off":
-            agent = WindowOnOffController()
-        elif agent_name == "window_schedule":
-            agent = WindowScheduleController()
-        elif agent_name == "single_speed_ac_only":
-            agent = SingleSpeedACOnlyController()    
+        if agent_name == "5zone-rbc":
+            agent = (window_fan_speed=0.5)
+         
         
         for episode in range(1, num_episodes + 1):
             with tqdm(total=len(val_chunks), 
@@ -211,8 +166,6 @@ def train(config=None):
                     temp_violations = [v for v in obs_dict['temp_violations'] if v is not None]
                     co2_violations = [v for v in obs_dict['co2_violations'] if v is not None]
                     
-
-                    
                     temp_viol_percentage = sum(temp_violations)/len(temp_violations)*100 if temp_violations else 0
                     co2_viol_percentage = sum(co2_violations)/len(co2_violations)*100 if co2_violations else 0
                     
@@ -230,9 +183,6 @@ def train(config=None):
                     ac_fan_speeds = val_obs_dict['ac_fan_speeds']
                     raw_temp_deviations = val_obs_dict['temp_deviations']
                     raw_co2_deviations = val_obs_dict['co2_deviations']
-                    pmv_values = val_obs_dict['pmvs']
-                    ppd_values = val_obs_dict['ppds']
-                    #Log the timestep values    
                     pbar.set_postfix_str(f"val Chunk {pbar.n + 1}/{len(val_chunks)}")
                     pbar.update(1)
                 
@@ -308,8 +258,6 @@ def train(config=None):
                 for timestep in range(log_length):
                     wandb.log({
                         "val_inside_temperature_timestep": inside_temp_levels[timestep],
-                        "val_ppd_timestep": ppd_values[timestep],
-                        "val_pmv_timestep": pmv_values[timestep],
                         "val_outside_temperature_timestep": outside_temp_levels[timestep],
                         "val_co2_level_timestep": co2_levels[timestep],
                         "val_window_fan_speed_timestep": window_fan_speeds[timestep],

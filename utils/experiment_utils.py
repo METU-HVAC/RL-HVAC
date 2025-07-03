@@ -134,6 +134,15 @@ def append_info_and_time_to_dict(observation,info,current_step, timesteps_per_ho
     observation['co2_deviation'] = info['abs_co2_penalty']
     observation['time_label'] = time_label
     return observation
+def append_info_and_time_to_dict_5zone(observation,info,current_step, timesteps_per_hour):
+    month, day,hour = int(observation['month']), int(observation['day_of_month']), int(observation['hour'])
+    minute = int((current_step % timesteps_per_hour) * (60 / timesteps_per_hour))
+    time_label = f"{month:02}-{day:02} {hour:02}:{minute:02}"
+
+    observation['temp_violation'] = info['is_comfort_violated']
+    observation['temp_deviation'] = info['abs_comfort_penalty']
+    observation['time_label'] = time_label
+    return observation
 
 def append_raw_action_to_dict(observation, raw_action):
     observation['raw_action'] = raw_action
@@ -323,6 +332,8 @@ obs_maxs = [
     np.float32(20250.0), # window fan energy
     np.float32(2000000.0), # total electricity HVAC
 ]
+five_zone_obs_mins = []
+five_zone_obs_maxs = []
 def min_max_normalize(obs, min_vals, max_vals):
     if isinstance(obs, torch.Tensor):
         # Move to CPU if needed and convert to NumPy
