@@ -10,6 +10,7 @@ import wandb
 
 from experiments.madqn import madqn_train
 from experiments.dqn import dqn_train 
+from experiments.dqn import dqn_train_pmv 
 from experiments.madqn import ac_only_train
 from experiments.vanilla_environments import five_zone_train
 from utils.experiment_utils import create_experiment_name
@@ -20,7 +21,7 @@ def parse_args():
     p.add_argument("--project",default=os.environ.get("WANDB_PROJECT", "A403-Train"))
     p.add_argument("--entity",default=os.environ.get("WANDB_ENTITY"))
     p.add_argument("--count",type=int,default=None)
-    p.add_argument("--algorithm", required=True, choices=["madqn", "dqn" , "ac_only"], help="RL algorithm to use")
+    p.add_argument("--algorithm", required=True, choices=["madqn", "dqn" , "dqn_pmv","ac_only"], help="RL algorithm to use")
     return p.parse_args()
 
 
@@ -35,8 +36,8 @@ def main():
     
     # Create experiment save dir
     train_season = "hot"
-    ENV_ID ="5zone"
-    NUM_EPISODES = 20             
+    ENV_ID ="A403mediumfanger"
+    NUM_EPISODES = 10             
     unique_experiment_name = f"{train_season}_{ENV_ID}_train_{timestamp}"
    
     experiment_save_dir_name = os.path.join(run_dir, "results", args.algorithm, unique_experiment_name)
@@ -44,7 +45,7 @@ def main():
     if not os.path.exists(experiment_save_dir_name):
         os.makedirs(experiment_save_dir_name)
 
-    ENV_NAME = f"{ENV_ID}_{train_season}_MULTISPEED_FAN_COS_ANNEL"
+    ENV_NAME = f"{ENV_ID}_{train_season}_MULTISPEED_FAN"
     ALGORITHM_NAME = args.algorithm.upper()
     
     name = create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
@@ -57,14 +58,15 @@ def main():
             "name": name,
             "metric": {"name": "final_val_power_kWh_mean", "goal": "minimize"},
             "parameters": {
-                    'learning_rate': {'values': [3e-4,1e-3,3e-3]},
+                    'learning_rate':{'value': 3e-4}, #{'values': [3e-4,1e-3,3e-3]},
                     'lambda_energy': {'value': 1/2_000_000},
                     'gamma': {'value':  0.95}, # [0.90,0.95,0.99]
-                    'co2_weight': {'value':0}, # 0.2 yapma 'min':0.20,'max':0.60
-                    'temp_weight': {'min':0.40,'max':0.60}, #[0.40,0.50,0.60]
+                    'co2_weight': {'min':0.20,'max':0.60}, # 0.2 yapma 
+                    #'temp_weight': {'min':0.20,'max':0.80}, #[0.40,0.50,0.60]
+                    'pmv_weight': {'min':0.20,'max':0.80}, # [0.40,0.50,0.60]
                     'experiment_save_dir': {'value': experiment_save_dir_name},
                     'train_season': {'value': train_season},
-                    'agent_count': {'value': 80},
+                    'agent_count': {'value':100},
                     'num_episodes': {'value': NUM_EPISODES},
                     'layer_sizes': {'value': [128,128]},
                     'env_id': {'value': ENV_ID},
@@ -91,6 +93,8 @@ def main():
         train_func = ac_only_train.train
     elif args.algorithm == "five_zone_train":
         train_func = five_zone_train.train
+    elif args.algorithm == "dqn_pmv":
+        train_func = dqn_train_pmv.train
     else:
         raise ValueError("Unsupported algorithm")
     # 5) Launch the specified number of agents (in this container it's usually 1)

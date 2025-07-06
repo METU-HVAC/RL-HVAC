@@ -22,7 +22,7 @@ class SetpointController():
         self.hvac_off_co2_075 = 38  
         self.hvac_off_co2_1 = 39
          
-        self.summer_limits = [24,25]
+        self.summer_limits = [23,26]
         self.winter_limits = [20,23.5]
         
         self.window_fan_speed = window_fan_speed
@@ -128,16 +128,16 @@ class MultiSpeedSetpointController():
             self.window_fan_speed = 0.0  # Off
             
         if occupancy > 0:
-            # if self.window_fan_speed > 0:
-            #     if self.window_fan_speed == 0.5:
-            #         return self.summer_hvac_on_co2_05 if is_summer else self.winter_hvac_on_co2_05
-            #     elif self.window_fan_speed == 0.75:
-            #         return self.summer_hvac_on_co2_075 if is_summer else self.winter_hvac_on_co2_075
-            #     elif self.window_fan_speed == 1.0:
-            #         return self.summer_hvac_on_co2_1 if is_summer else self.winter_hvac_on_co2_1
-            #     else:
-            #         print("Invalid window fan speed")
-            # else:
+            if self.window_fan_speed > 0:
+                if self.window_fan_speed == 0.5:
+                    return self.summer_hvac_on_co2_05 if is_summer else self.winter_hvac_on_co2_05
+                elif self.window_fan_speed == 0.75:
+                    return self.summer_hvac_on_co2_075 if is_summer else self.winter_hvac_on_co2_075
+                elif self.window_fan_speed == 1.0:
+                    return self.summer_hvac_on_co2_1 if is_summer else self.winter_hvac_on_co2_1
+                else:
+                    print("Invalid window fan speed")
+            else:
                 return self.summer_hvac_on_co2_off if is_summer else self.winter_hvac_on_co2_off
                 
         else:

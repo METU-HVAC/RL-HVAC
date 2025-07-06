@@ -39,7 +39,7 @@ def is_summer_by_month(current_month: int, summer_start: tuple, summer_end: tupl
 raw_observations = []
 log_val_dict = []
 def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_chunk,agent,train_interval,timesteps_per_hour,reward_config):
-    env = create_environment(env_id,start_date, end_date,season,CO2andTemperatureReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
+    env = create_environment(env_id,start_date, end_date,season,CO2andPMVReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
     OFF_ACTION = 0 #initially the the system is not working
@@ -80,7 +80,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
 
         obs_dict = dict(zip(env.get_wrapper_attr('observation_variables'), observation))
         obs_dict = append_info_and_time_to_dict_pmv(obs_dict,info,current_step, timesteps_per_hour)
-       
+        obs_dict = append_raw_action_to_dict(obs_dict,action)
         obs_dict = append_fan_speed_to_dict(obs_dict, DEFAULT_A403MEDIUMWINDOW_DISCRETE_FUNCTION(action)[3], DEFAULT_A403MEDIUMWINDOW_DISCRETE_FUNCTION(action)[2])
         all_obs_dict = add_observation(all_obs_dict, obs_dict)
         
@@ -140,21 +140,17 @@ def train(config=None):
         total_testing_steps = total_number_of_test_chunks * num_episodes*steps_per_chunk
         current_training_step = 0
         reward_config = {
-            'temperature_variables': ['air_temperature'],
+            'pmv_variables': ['pmv'],
             'co2_variable': 'air_co2',
             'energy_variables': ['total_electricity_HVAC', 'window_fan_energy'],
-            'range_comfort_winter': (20.0, 23.5),
-            'range_comfort_summer': (23.0, 26.0),
-            "summer_start"          : SUMMER_START,
-            "summer_final"          : SUMMER_END,
             'ac_energy_weight': 0.3,
             'fan_energy_weight': 0.3,
             'co2_weight': 0.3,
             'ac_energy_weight': 0.3,
             'fan_energy_weight': 0.3,
-            'temperature_weight': 0.3,
+            'pmv_weight': 0.3,
             'lambda_energy': 1/2_000_000, # 1/100.000
-            'lambda_temperature': 1.0,
+            'lambda_pmv': 1.0,
             'lambda_co2': 1.0,
             'co2_threshold': 800,
         }
@@ -195,7 +191,7 @@ def train(config=None):
                 val_hvac_power_list = []
                 val_fan_power_list = []
                 val_co2_viol_percentage_list = []
-                val_temp_viol_percentage_list = []
+                val_pmv_viol_percentage_list = []
                 val_obs_dict = {}
                 for val_chunk in val_chunks:
                     obs_dict = {}    
@@ -216,12 +212,12 @@ def train(config=None):
                     
                     total_power = window_power + hvac_power
                     
-                    temp_violations = [v for v in obs_dict['temp_violations'] if v is not None]
+                    pmv_violations = [v for v in obs_dict['pmv_violations'] if v is not None]
                     co2_violations = [v for v in obs_dict['co2_violations'] if v is not None]
                     
                     
                     
-                    temp_viol_percentage = sum(temp_violations)/len(temp_violations)*100 if temp_violations else 0
+                    pmv_viol_percentage = sum(pmv_violations)/len(pmv_violations)*100 if pmv_violations else 0
                     co2_viol_percentage = sum(co2_violations)/len(co2_violations)*100 if co2_violations else 0
                     
                     joules_to_kwh = 1/3600000
@@ -229,8 +225,8 @@ def train(config=None):
                     val_hvac_power_list.append(hvac_power*joules_to_kwh)
                     val_fan_power_list.append(window_power*joules_to_kwh)
                     val_co2_viol_percentage_list.append(co2_viol_percentage)
-                    val_temp_viol_percentage_list.append(temp_viol_percentage)
-                    #Timestep temperature and fan speeds
+                    val_pmv_viol_percentage_list.append(pmv_viol_percentage)
+                    #Timestep pmverature and fan speeds
                     inside_temp_levels = val_obs_dict['air_temperatures']
                     outside_temp_levels = val_obs_dict['outdoor_temperatures']
                     co2_levels = val_obs_dict['air_co2s']
@@ -262,18 +258,18 @@ def train(config=None):
                 val_hvac_power_std = np.std(val_hvac_power_list)
                 val_fan_power_mean = np.mean(val_fan_power_list)
                 val_fan_power_std = np.std(val_fan_power_list)
-                val_temp_violation_mean = np.mean(val_temp_viol_percentage_list)
-                val_temp_violation_std = np.std(val_temp_viol_percentage_list)
+                val_pmv_violation_mean = np.mean(val_pmv_viol_percentage_list)
+                val_pmv_violation_std = np.std(val_pmv_viol_percentage_list)
                 val_co2_violation_mean = np.mean(val_co2_viol_percentage_list)
                 val_co2_violation_std = np.std(val_co2_viol_percentage_list)
 
-                temp_deviations = [v for v in val_obs_dict['temp_deviations'] if v is not None]
+                pmv_deviations = [v for v in val_obs_dict['pmv_deviations'] if v is not None]
                 co2_deviations = [v for v in val_obs_dict['co2_deviations'] if v is not None]
 
-                val_temp_deviation_min = np.min(temp_deviations) if temp_deviations else None
-                val_temp_deviation_max = np.max(temp_deviations) if temp_deviations else None
-                val_temp_deviation_mean = np.mean(temp_deviations) if temp_deviations else None
-                val_temp_deviation_std = np.std(temp_deviations) if temp_deviations else None
+                val_pmv_deviation_min = np.min(pmv_deviations) if pmv_deviations else None
+                val_pmv_deviation_max = np.max(pmv_deviations) if pmv_deviations else None
+                val_pmv_deviation_mean = np.mean(pmv_deviations) if pmv_deviations else None
+                val_pmv_deviation_std = np.std(pmv_deviations) if pmv_deviations else None
 
                 val_co2_deviation_min = np.min(co2_deviations) if co2_deviations else None
                 val_co2_deviation_max = np.max(co2_deviations) if co2_deviations else None
@@ -282,33 +278,33 @@ def train(config=None):
                 log_length = len(val_obs_dict['time_labels'])
                 #Power
                 
-                wandb.log({"val_total_power_kwh_mean": val_power_mean},step=episode * log_length)
-                wandb.log({"val_total_power_kwh_std": val_power_std},step=episode * log_length)
-                wandb.log({"val_hvac_power_kwh_mean": val_hvac_power_mean},step=episode * log_length)
-                wandb.log({"val_hvac_power_kwh_std": val_hvac_power_std},step=episode * log_length)
-                wandb.log({"val_fan_power_kwh_mean": val_fan_power_mean},step=episode * log_length)
-                wandb.log({"val_fan_power_kwh_std": val_fan_power_std},step=episode * log_length)
+                wandb.log({"final_val_total_power_kwh_mean": val_power_mean},step=episode * log_length)
+                wandb.log({"final_val_total_power_kwh_std": val_power_std},step=episode * log_length)
+                wandb.log({"final_val_hvac_power_kwh_mean": val_hvac_power_mean},step=episode * log_length)
+                wandb.log({"final_val_hvac_power_kwh_std": val_hvac_power_std},step=episode * log_length)
+                wandb.log({"final_val_fan_power_kwh_mean": val_fan_power_mean},step=episode * log_length)
+                wandb.log({"final_val_fan_power_kwh_std": val_fan_power_std},step=episode * log_length)
                 #CO2
 
-                wandb.log({"val_co2_violation_mean":val_co2_violation_mean},step=episode * log_length)
-                wandb.log({"val_co2_violation_std":val_co2_violation_std},step=episode * log_length)
+                wandb.log({"final_val_co2_violation_mean":val_co2_violation_mean},step=episode * log_length)
+                wandb.log({"final_val_co2_violation_std":val_co2_violation_std},step=episode * log_length)
                 
-                wandb.log({"val_co2_deviation_mean":val_co2_deviation_mean},step=episode * log_length)
-                wandb.log({"val_co2_deviation_std":val_co2_deviation_std},step=episode * log_length)
-                wandb.log({"val_co2_deviation_min":val_co2_deviation_min},step=episode * log_length)
-                wandb.log({"val_co2_deviation_max":val_co2_deviation_max},step=episode * log_length)
+                wandb.log({"final_val_co2_deviation_mean":val_co2_deviation_mean},step=episode * log_length)
+                wandb.log({"final_val_co2_deviation_std":val_co2_deviation_std},step=episode * log_length)
+                wandb.log({"final_val_co2_deviation_min":val_co2_deviation_min},step=episode * log_length)
+                wandb.log({"final_val_co2_deviation_max":val_co2_deviation_max},step=episode * log_length)
                 #Temperature
 
-                wandb.log({"val_temp_violation_mean":val_temp_violation_mean},step=episode * log_length)
-                wandb.log({"val_temp_violation_std":val_temp_violation_std},step=episode * log_length)
+                wandb.log({"final_val_pmv_violation_mean":val_pmv_violation_mean},step=episode * log_length)
+                wandb.log({"final_val_pmv_violation_std":val_pmv_violation_std},step=episode * log_length)
                 
-                wandb.log({"val_temp_deviation_mean":val_temp_deviation_mean},step=episode * log_length)
-                wandb.log({"val_temp_deviation_std":val_temp_deviation_std},step=episode * log_length)
-                wandb.log({"val_temp_deviation_min":val_temp_deviation_min},step=episode * log_length)
-                wandb.log({"val_temp_deviation_max":val_temp_deviation_max},step=episode * log_length)
+                wandb.log({"final_val_pmv_deviation_mean":val_pmv_deviation_mean},step=episode * log_length)
+                wandb.log({"final_val_pmv_deviation_std":val_pmv_deviation_std},step=episode * log_length)
+                wandb.log({"final_val_pmv_deviation_min":val_pmv_deviation_min},step=episode * log_length)
+                wandb.log({"final_val_pmv_deviation_max":val_pmv_deviation_max},step=episode * log_length)
                 #Reward
 
-                wandb.log({"val_reward_mean":avg_val_reward},step=episode * log_length)
+                wandb.log({"final_val_reward_mean":avg_val_reward},step=episode * log_length)
 
                 #Save KPI's to csv file
                 step_value = episode * log_length  # or any other step index you prefer
@@ -316,7 +312,7 @@ def train(config=None):
                 with open(csv_file_path, mode="a", newline="") as file:
                     writer = csv.writer(file)
                     # Write a row with the current KPIs.
-                    writer.writerow([step_value, val_temp_violation_mean, val_co2_violation_mean, val_power_mean])
+                    writer.writerow([step_value, val_pmv_violation_mean, val_co2_violation_mean, val_power_mean])
                 
                 # Temperature and Fan Speed plots
                 for t in range(log_length):
@@ -339,7 +335,7 @@ def train(config=None):
                         "ValR":f"{avg_val_reward:.1f}",
                         "AvgPwr":f"{val_power_mean:.1f}", 
                         "AvgCo2OccConc": f"{val_co2_violation_mean:.1f}",
-                        "AvgTempOcc": f"{val_temp_violation_mean:.1f}"
+                        "AvgPmvViol": f"{val_pmv_violation_mean:.1f}"
                     }
                 )
 
