@@ -333,3 +333,231 @@ class CO2andTemperatureReward(LinearReward):
         #     self.daily_timestep_count = 0
         
         return reward, window_energy_term,ac_energy_term, co2_term, temperature_term
+
+
+
+class CO2andPMVReward(LinearReward):
+    def __init__(
+            self,
+            co2_variable: str,
+            energy_variables: List[str],
+            pmv_variables: List[str],
+            ac_energy_weight: float = 0.3,
+            fan_energy_weight: float = 0.3,
+            co2_weight: float = 0.3,
+            pmv_weight: float = 0.3,
+            lambda_energy: float = 1e-2,
+            lambda_co2: float = 1.0,
+            lambda_pmv: float = 1.0,
+            co2_threshold: float = 800,
+
+        ):
+            super(LinearReward, self).__init__()
+            self.co2_variable = co2_variable
+            self.energy_names = energy_variables
+            self.pmv_names = pmv_variables
+            self.W_fan_energy = fan_energy_weight
+            self.W_ac_energy = ac_energy_weight
+            self.W_co2 = co2_weight
+            self.W_pmv = pmv_weight
+
+
+            self.lambda_energy = lambda_energy
+            self.lambda_co2 = lambda_co2
+            self.lambda_pmv = lambda_pmv
+            self.co2_threshold = co2_threshold
+
+            self.energy_rew_arr = []
+            self.co2_rew_arr = []
+            self.comfort_term_arr = []
+            self.daily_timestep_count = 0
+            self.timesteps_per_day = 144*9 # 12*24
+            
+
+    def _get_seperate_energy_consumed(self, obs_dict):
+        """
+        Extracts energy consumption values for each variable in energy_names.
+
+        Returns:
+            total_energy (float): Sum of all energy values.
+            energy_values (dict): Dictionary with individual energy values per variable.
+        """
+        energy_values = {}
+        for name in self.energy_names:
+            if name in obs_dict:
+                energy_values[name] = obs_dict[name]
+            else:
+                energy_values[name] = 0.0
+
+        total_energy = sum(energy_values.values())
+        return total_energy, energy_values
+    def _get_seperate_energy_penalty(self, energy_values):
+        """
+        Computes energy penalty for each energy variable and returns a combined penalty.
+        """
+        window_penalty = -energy_values.get("window_fan_energy", 0.0)
+        ac_penalty = -energy_values.get("total_electricity_HVAC", 0.0)
+        total_penalty = window_penalty + ac_penalty
+        return total_penalty, window_penalty, ac_penalty
+    def __call__(self, obs_dict: Dict[str, Any]) -> Tuple[float, Dict[str, Any]]:
+        """
+        Calculate the reward function.
+
+        Args:
+            obs_dict (Dict[str, Any]): Dict with observation variable name (key) and observation variable value (value).
+
+        Returns:
+            Tuple[float, Dict[str, Any]]: Reward value and dictionary with their individual components.
+        """
+
+        try:
+            assert all(pmv_name in list(obs_dict.keys())
+                       for pmv_name in self.pmv_names)
+        except AssertionError as err:
+            self.logger.error(
+                'Some of the pmv variables specified are not present in observation.')
+            raise err
+        try:
+            assert all(energy_name in list(obs_dict.keys())
+                       for energy_name in self.energy_names)
+        except AssertionError as err:
+            self.logger.error(
+                'Some of the energy variables specified are not present in observation.')
+            raise err
+        try:
+            assert self.co2_variable in list(obs_dict.keys())
+        except AssertionError as err:
+            self.logger.error(
+                'CO2 variable specified is not present in observation.')
+            raise err
+        # Energy penalty
+        energy_consumed, energy_values = self._get_seperate_energy_consumed(obs_dict)
+        energy_penalty, window_energy_penalty, ac_energy_penalty = self._get_seperate_energy_penalty(energy_values)
+       
+        # CO2 penalty
+        co2_concentration = obs_dict[self.co2_variable]
+        co2_reward = self._get_co2_reward(co2_concentration,obs_dict['people_occupant'],self.co2_threshold)
+
+         # Comfort violation calculation
+        pmv_reward, pmv_deviation = self._get_pmv_violation(obs_dict)
+        is_occupied = obs_dict['people_occupant'] > 0
+        # Weighted sum of both terms
+        reward, window_energy_term,ac_energy_term ,co2_term,pmv_term = self._get_reward(window_energy_penalty,ac_energy_penalty, co2_reward, pmv_reward,obs_dict['people_occupant'])
+        co2_deviation = co2_concentration-self.co2_threshold if (co2_concentration > self.co2_threshold and is_occupied )else 0
+
+        reward_terms = {
+            'energy_term': window_energy_term + ac_energy_term,
+            'window_energy_term': window_energy_term,
+            'ac_energy_term': ac_energy_term,
+            'co2_term': co2_term,
+            'pmv_term': pmv_term,
+            'ac_energy_weight': self.W_ac_energy,
+            'fan_energy_weight': self.W_fan_energy,
+            'co2_weight': self.W_co2,
+            'pmv_weight': self.W_pmv,
+            'abs_energy_penalty': energy_penalty,
+            'abs_pmv_penalty': pmv_deviation if is_occupied else None,
+            'abs_co2_penalty': co2_deviation if is_occupied else None,
+            'total_power_demand': energy_consumed,
+            'co2_concentration': co2_concentration,
+            'is_co2_violated': True if is_occupied and co2_deviation > 0 else False if is_occupied else None,
+            'is_comfort_violated': True if is_occupied and pmv_deviation > 0 else False if is_occupied else None,
+            'is_occupied': is_occupied
+        }
+        return reward, reward_terms
+    def pmv_comfort_reward(self, pmv: float, max_penalty: float = -2.5, occupancy: float = 1.0) -> float:
+        """
+        Normalized comfort reward centered at PMV = 0.
+
+        - Reward is 1 when PMV = 0.
+        - Reward decreases linearly toward 0 as |PMV| approaches 0.5.
+        - Beyond ±0.5, reward becomes negative and saturates at max_penalty.
+        - Returns 0 if unoccupied.
+
+        Args:
+            pmv (float): PMV value.
+            occupancy (float): Number of people in the zone.
+            max_penalty (float): Max negative reward.
+
+        Returns:
+            float: Normalized comfort reward.
+        """
+        if occupancy == 0:
+            return 0.0  # No occupants → comfort not relevant
+
+        abs_pmv = abs(pmv)
+
+        if abs_pmv <= 0.5:
+            # Linearly interpolate from 1 (at 0) to 0 (at ±0.5)
+            return 1.0 - 2 * abs_pmv
+        else:
+            # Linear penalty beyond comfort zone
+            penalty = (abs_pmv - 0.5)
+            reward = -penalty  # 1 unit deviation = –1 reward
+            return max(reward, max_penalty)
+    def _get_pmv_violation(self, obs_dict: Dict[str, Any]) -> Tuple[float, float]:
+        """
+        Compute PMV reward and deviation based on occupancy.
+
+        Returns:
+            Tuple[float, float]: PMV reward, PMV deviation (only if occupied).
+        """
+        pmv = obs_dict.get("pmv", 0.0)
+        occupancy = obs_dict.get("people_occupant", 0)
+
+        reward = self.pmv_comfort_reward(pmv, occupancy=occupancy)
+        deviation = abs(pmv) if occupancy > 0 and abs(pmv) > 0.5 else 0.0
+        return reward, deviation
+
+    def co2_penalty_only_reward(self,co2: float, threshold: float = 700.0, max_limit: float = 900.0, min_penalty: float = -5.0) -> float:
+        if co2 <= threshold:
+            return 1.0
+        elif co2 >= max_limit:
+            return min_penalty
+        else:
+            slope = (1.0 - min_penalty) / (max_limit - threshold)
+            return 1.0-slope * (co2 - threshold)
+    def _get_co2_reward(self, co2_concentration: float,people_count: int,threshold: float = 700.0, max_limit: float = 900.0, min_penalty: float = -5.0) -> float:
+        if people_count == 0:
+            return 0
+        if co2_concentration <= threshold:
+            return 1.0
+        elif co2_concentration >= max_limit:
+            return min_penalty
+        else:
+            slope = (1.0 - min_penalty) / (max_limit - threshold)
+            return 1.0-slope * (co2_concentration - threshold)
+
+    def _get_reward(self, window_energy_penalty:float,ac_energy_penalty: float, co2_penalty: float,pmv_penalty: float,occupancy: float) -> Tuple[float, float, float,float]:
+        """
+        Calculate the reward value using penalties for energy, CO2 and pmv.
+
+        Args:
+            energy_penalty (float): Negative absolute energy penalty value.
+            co2_penalty (float): Negative absolute CO2 penalty value.
+            pmv_penalty (float): PMV penalty value.
+
+        Returns:
+            Tuple[float, float, float,float]: Total reward, energy term, CO2 term, pmv term.
+        """
+        
+        window_energy_term = self.lambda_energy*100 * self.W_fan_energy * window_energy_penalty
+        ac_energy_term = self.lambda_energy * self.W_ac_energy * ac_energy_penalty
+        
+        if occupancy == 0 and window_energy_term < 0:
+            window_energy_term = window_energy_term*2
+            
+        if occupancy == 0 and ac_energy_term <0:
+            ac_energy_term = ac_energy_term*2
+        
+        co2_term = self.lambda_co2 * self.W_co2 * co2_penalty
+        pmv_term = self.lambda_pmv * self.W_pmv * pmv_penalty
+        
+        reward = window_energy_term + ac_energy_term + co2_term + pmv_term
+
+        # Increment daily timestep count
+        self.daily_timestep_count += 1
+        
+        
+        return reward, window_energy_term,ac_energy_term, co2_term, pmv_term
+

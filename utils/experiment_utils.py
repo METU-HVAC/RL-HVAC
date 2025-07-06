@@ -15,8 +15,6 @@ def remove_previous_run_logs():
             if name.startswith("Eplus-env-"):
                 dir_path = os.path.join(root, name)
                 shutil.rmtree(dir_path)
-def is_summer(month):
-    return 1.0 if 6 <= month <= 9 else 0.0  # 1.0 for summer, 0.0 for winter
 
 # Example helper function to append observations
 def append_observations(obs_dict, global_obs_list):
@@ -122,7 +120,17 @@ def add_observation(all_obs_dict, obs_dict):
             all_obs_dict[key] = []
         all_obs_dict[key].append(value)
     return all_obs_dict
+def append_info_and_time_to_dict_pmv(observation,info,current_step, timesteps_per_hour):
+    month, day,hour = int(observation['month']), int(observation['day_of_month']), int(observation['hour'])
+    minute = int((current_step % timesteps_per_hour) * (60 / timesteps_per_hour))
+    time_label = f"{month:02}-{day:02} {hour:02}:{minute:02}"
 
+    observation['pmv_violation'] = info['is_comfort_violated']
+    observation['co2_violation'] = info['is_co2_violated']
+    observation['pmv_deviation'] = info['abs_pmv_penalty']
+    observation['co2_deviation'] = info['abs_co2_penalty']
+    observation['time_label'] = time_label
+    return observation
 def append_info_and_time_to_dict(observation,info,current_step, timesteps_per_hour):
     month, day,hour = int(observation['month']), int(observation['day_of_month']), int(observation['hour'])
     minute = int((current_step % timesteps_per_hour) * (60 / timesteps_per_hour))
@@ -280,7 +288,24 @@ obs_mins_future = [
     np.float32(0.0), # people occupant
     np.float32(-25.0), # outdoor temperatures
     np.float32(0.0), # people occupant
-] 
+]
+obs_mins_pmv = [
+    np.float32(1.0), # month
+    np.float32(1.0), #day of month
+    np.float32(0.0), # hour
+    np.float32(-25.0), # outdoor temperatures
+    np.float32(0.0), # outdoor humidity
+    np.float32(5.0),# heating setpoint
+    np.float32(23.0),# cooling setpoint
+    np.float32(-20.0), # air temperature
+    np.float32(0.0), # air humidity
+    np.float32(0.0), # people occupant
+    np.float32(400.0), # air_co2
+    np.float32(0.0), # window fan energy
+    np.float32(-3.0), # pmv
+    np.float32(5.0), # ppd
+    np.float32(0.0)  , # total electricity HVAC
+]  
 obs_mins = [
     np.float32(1.0), # month
     np.float32(1.0), #day of month
@@ -316,6 +341,23 @@ obs_maxs_future = [
     np.float32(9.6), # people occupant
     np.float32(9.6), # people occupant
     np.float32(100.0), # outdoor humidity
+]
+obs_maxs_pmv = [
+    np.float32(12.0),# month
+    np.float32(31.0),#day of month
+    np.float32(23.0),# hour
+    np.float32(50.0),# outdoor temperatures
+    np.float32(100.0), # outdoor humidity
+    np.float32(23.0), # heating setpoint
+    np.float32(50.0), # cooling setpoint
+    np.float32(50.0),  # air temperature
+    np.float32(100.0),  # air humidity
+    np.float32(9.6), # people occupant
+    np.float32(3000.0), # air_co2
+    np.float32(20250.0), # window fan energy
+    np.float32(3), # pmv
+    np.float32(100), # ppd
+    np.float32(2000000.0), # total electricity HVAC
 ]
 obs_maxs = [
     np.float32(12.0),# month
