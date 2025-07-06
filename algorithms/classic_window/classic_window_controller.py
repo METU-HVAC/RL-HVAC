@@ -19,7 +19,7 @@ class WindowOnOffController():
 
         self.off_action = 36
         #Hvac on -off co2 on 
-    def select_action(self, state, current_step, timesteps_per_hour):
+    def select_action(self, state, is_summer,current_step, timesteps_per_hour):
         '''
         Act method for the controller
         '''
@@ -33,7 +33,7 @@ class WindowOnOffController():
         #Summer
         if occupancy > 0:
 
-            if month >= 6 and month <= 9:
+            if is_summer:
                 selected_action = self.summer_hvac_on_co2_on
             else:
                 selected_action = self.winter_hvac_on_co2_on
@@ -63,7 +63,7 @@ class WindowScheduleController():
         self.off_action = 36
         self.last_occupation_time = None  # To track when occupation started
 
-    def select_action(self, state, current_step, timesteps_per_hour):
+    def select_action(self, state,is_summer, current_step, timesteps_per_hour):
         """
         When occupied:
         • HVAC always ON.
@@ -86,7 +86,7 @@ class WindowScheduleController():
         else:
             # decide whether window is open
             is_window_open = (minute < 10)
-            season = "summer" if 6 <= month <= 9 else "winter"
+            season = "summer" if is_summer else "winter"
 
             if is_window_open:
                 # first 10 minutes → open window + HVAC

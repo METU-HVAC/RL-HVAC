@@ -28,7 +28,13 @@ import pandas as pd
 # htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
 # 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
 # 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
+SUMMER_START = (1, 1)  # March 1st
+SUMMER_END = (12, 30)  # October 30th
+def is_summer_by_month(current_month: int, summer_start: tuple, summer_end: tuple) -> bool:
+    start_month = summer_start[0]
+    end_month = summer_end[0]
 
+    return start_month <= current_month <= end_month
 
 raw_observations = []
 log_val_dict = []
@@ -51,8 +57,8 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
     prev_month = None
     prev_day = None
     while current_step < steps_per_chunk:
-        
-        action = agent.select_action(state,current_step-1,timesteps_per_hour)
+        is_summer= is_summer_by_month(int(state[0][0]),SUMMER_START,SUMMER_END)  # Assuming month is the first element in the statesummer_start=SUMMER_START,summer_end=SUMMER_END)
+        action = agent.select_action(state,is_summer,current_step-1,timesteps_per_hour)
         
         #np_action = np.array([action], dtype=np.float32)  # Adjust dtype to match environment
         
@@ -105,7 +111,7 @@ def train(config=None):
 
         remove_previous_run_logs()
                 
-        state_size =  19 # Adjust based on the size of your observation space
+        state_size =  21 # Adjust based on the size of your observation space
         action_size = 20  
         train_interval = 96 # Train every n steps
         timesteps_per_hour = 4  # 10-minute intervals
@@ -140,6 +146,8 @@ def train(config=None):
             'energy_variables': ['total_electricity_HVAC', 'window_fan_energy'],
             'range_comfort_winter': (20.0, 23.5),
             'range_comfort_summer': (23.0, 26.0),
+            "summer_start"          : SUMMER_START,
+            "summer_final"          : SUMMER_END,
             'ac_energy_weight': 0.3,
             'fan_energy_weight': 0.3,
             'co2_weight': 0.3,
@@ -206,12 +214,13 @@ def train(config=None):
                     #KPI's
                     window_power = sum(obs_dict['window_fan_energies'])
                     hvac_power = sum(obs_dict['total_electricity_HVACs'])
+                    
                     total_power = window_power + hvac_power
                     
                     temp_violations = [v for v in obs_dict['temp_violations'] if v is not None]
                     co2_violations = [v for v in obs_dict['co2_violations'] if v is not None]
                     
-
+                    
                     
                     temp_viol_percentage = sum(temp_violations)/len(temp_violations)*100 if temp_violations else 0
                     co2_viol_percentage = sum(co2_violations)/len(co2_violations)*100 if co2_violations else 0
@@ -230,8 +239,13 @@ def train(config=None):
                     ac_fan_speeds = val_obs_dict['ac_fan_speeds']
                     raw_temp_deviations = val_obs_dict['temp_deviations']
                     raw_co2_deviations = val_obs_dict['co2_deviations']
-                    pmv_values = val_obs_dict['pmvs']
-                    ppd_values = val_obs_dict['ppds']
+                    occupants = np.array(val_obs_dict['people_occupants'])
+                    pmvs = np.array(val_obs_dict['pmvs'])
+                    ppds = np.array(val_obs_dict['ppds'])
+                    
+                    pmv_values = np.where(occupants > 0, pmvs, 0.0)
+                    ppd_values = np.where(occupants > 0, ppds, 5.0)
+                    
                     #Log the timestep values    
                     pbar.set_postfix_str(f"val Chunk {pbar.n + 1}/{len(val_chunks)}")
                     pbar.update(1)

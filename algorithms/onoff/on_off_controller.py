@@ -38,7 +38,7 @@ class OnOffController():
         
         self.window_fan_speed = window_fan_speed
         #Hvac on -off co2 on 
-    def select_action(self, state,current_step,timesteps_per_hour):
+    def select_action(self, state,is_summer,current_step,timesteps_per_hour):
         '''
         Act method for the controller
         '''
@@ -47,7 +47,7 @@ class OnOffController():
         #Summer
         if occupancy > 0:
 
-            if month >= 6 and month <= 9:
+            if is_summer:
                 if self.window_fan_speed == 0.5:
                     return self.summer_hvac_on_co2_05
                 elif self.window_fan_speed == 0.75:

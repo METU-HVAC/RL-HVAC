@@ -22,12 +22,12 @@ class SetpointController():
         self.hvac_off_co2_075 = 38  
         self.hvac_off_co2_1 = 39
          
-        self.summer_limits = [23,26]
+        self.summer_limits = [24,25]
         self.winter_limits = [20,23.5]
         
         self.window_fan_speed = window_fan_speed
 
-    def select_action(self, state,current_step,timesteps_per_hour):
+    def select_action(self, state,is_summer,current_step,timesteps_per_hour):
         '''
         Act method for the controller
         '''
@@ -37,8 +37,7 @@ class SetpointController():
         month = state[0][0]
         
         occupancy = state[0][9]
-        # Determine season (summer or winter)
-        is_summer = 6 <= month <= 9
+        
         # Select seasonal limits based on the current season
         lower_limit, upper_limit = (
             self.summer_limits if is_summer else self.winter_limits
@@ -108,7 +107,7 @@ class MultiSpeedSetpointController():
         self.winter_limits = [20,23.5]
         
 
-    def select_action(self, state,current_step,timesteps_per_hour):
+    def select_action(self, state,is_summer,current_step,timesteps_per_hour):
         '''
         Act method for the controller
         '''
@@ -118,8 +117,6 @@ class MultiSpeedSetpointController():
         month = state[0][0]
         
         occupancy = state[0][9]
-        # Determine season (summer or winter)
-        is_summer = 6 <= month <= 9
         # CO2-based fan speed control
         if co2 > 800:
             self.window_fan_speed = 1.0  # Full speed
@@ -131,16 +128,16 @@ class MultiSpeedSetpointController():
             self.window_fan_speed = 0.0  # Off
             
         if occupancy > 0:
-            if self.window_fan_speed > 0:
-                if self.window_fan_speed == 0.5:
-                    return self.summer_hvac_on_co2_05 if is_summer else self.winter_hvac_on_co2_05
-                elif self.window_fan_speed == 0.75:
-                    return self.summer_hvac_on_co2_075 if is_summer else self.winter_hvac_on_co2_075
-                elif self.window_fan_speed == 1.0:
-                    return self.summer_hvac_on_co2_1 if is_summer else self.winter_hvac_on_co2_1
-                else:
-                    print("Invalid window fan speed")
-            else:
+            # if self.window_fan_speed > 0:
+            #     if self.window_fan_speed == 0.5:
+            #         return self.summer_hvac_on_co2_05 if is_summer else self.winter_hvac_on_co2_05
+            #     elif self.window_fan_speed == 0.75:
+            #         return self.summer_hvac_on_co2_075 if is_summer else self.winter_hvac_on_co2_075
+            #     elif self.window_fan_speed == 1.0:
+            #         return self.summer_hvac_on_co2_1 if is_summer else self.winter_hvac_on_co2_1
+            #     else:
+            #         print("Invalid window fan speed")
+            # else:
                 return self.summer_hvac_on_co2_off if is_summer else self.winter_hvac_on_co2_off
                 
         else:
@@ -175,7 +172,7 @@ class SingleSpeedACOnlyController():
         
         self.window_fan_speed = window_fan_speed
 
-    def select_action(self, state,current_step=0,timesteps_per_hour=4):
+    def select_action(self, state,is_summer,current_step=0,timesteps_per_hour=4):
         '''
         Act method for the controller
         '''
@@ -185,8 +182,6 @@ class SingleSpeedACOnlyController():
         month = state[0][0]
         
         occupancy = state[0][9]
-        # Determine season (summer or winter)
-        is_summer = 6 <= month <= 9
         # Select seasonal limits based on the current season
         lower_limit, upper_limit = (
             self.summer_limits if is_summer else self.winter_limits
