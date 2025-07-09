@@ -129,8 +129,8 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
             action = agent.select_action(combined_obs_tensor)
         else:
             action = agent.choose_greedy_action(combined_obs_tensor) 
-        
-        next_state, reward, truncated, terminated, info = env.step(action.item())
+        combined_action = action.item()
+        next_state, reward, truncated, terminated, info = env.step(combined_action)
         done = terminated or truncated
         reward = torch.tensor([reward],dtype=torch.float32, device=device)
         #Switching penalty
@@ -556,6 +556,15 @@ def train(config=None):
             raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
             raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
 
+            valid_pmvs = raw_pmv_values[raw_pmv_values != 0.0]
+            pmv_deviations_from_raw = np.abs(valid_pmvs[np.abs(valid_pmvs) > 0.5]) - 0.5
+            pmv_violation_flags = (np.abs(valid_pmvs) > 0.5).astype(int)
+            
+            pmv_violation_mean = pmv_violation_flags.mean() * 100 
+            pmv_violation_std = pmv_violation_flags.std(ddof=0) * 100
+            
+            valid_ppds = raw_ppd_values[raw_ppd_values != 5.0]
+            
             # Log final timestep-level data
             for t in range(len(inside_temp_levels)):
                 wandb.log({
@@ -576,17 +585,21 @@ def train(config=None):
                 "final_val_power_kWh_mean": np.mean(final_val_power_list),
                 "final_val_power_kWh_std": np.std(final_val_power_list),
 
-                "final_val_pmv_violation_%_mean": np.mean(final_val_pmv_viol_list),
-                "final_val_pmv_violation_%_std": np.std(final_val_pmv_viol_list),
+                "final_val_pmv_violation_%_mean": pmv_violation_mean,
+                "final_val_pmv_violation_%_std": pmv_violation_std,
 
                 "final_val_co2_violation_%_mean": np.mean(final_val_co2_viol_list),
                 "final_val_co2_violation_%_std": np.std(final_val_co2_viol_list),
 
-                "final_pmv_deviation_mean": np.mean(final_pmv_deviations),
-                "final_pmv_deviation_std": np.std(final_pmv_deviations),
+                "final_val_pmv_deviation_mean": np.mean(pmv_deviations_from_raw),
+                "final_val_pmv_deviation_std": np.std(pmv_deviations_from_raw),
 
-                "final_co2_deviation_mean": np.mean(final_co2_deviations),
-                "final_co2_deviation_std": np.std(final_co2_deviations),
+                "final_val_co2_deviation_mean": np.mean(final_co2_deviations),
+                "final_val_co2_deviation_std": np.std(final_co2_deviations),
+                
+                "final_val_ppd_percentage_mean": np.mean(valid_ppds),
+                "final_val_ppd_percentage_std": np.std(valid_ppds),
+                
             })
 
             

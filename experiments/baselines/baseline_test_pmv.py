@@ -236,11 +236,7 @@ def train(config=None):
                     raw_co2_deviations = val_obs_dict['co2_deviations']
                     occupants = np.array(val_obs_dict['people_occupants'])
                     raw_pmv_deviations = val_obs_dict["pmv_deviations"]
-                    pmvs = np.array(val_obs_dict['pmvs'])
-                    ppds = np.array(val_obs_dict['ppds'])
                     
-                    raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
-                    raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
                     
                     #Log the timestep values    
                     pbar.set_postfix_str(f"val Chunk {pbar.n + 1}/{len(val_chunks)}")
@@ -263,6 +259,19 @@ def train(config=None):
                 val_co2_violation_mean = np.mean(val_co2_viol_percentage_list)
                 val_co2_violation_std = np.std(val_co2_viol_percentage_list)
 
+                pmvs = np.array(val_obs_dict['pmvs'])
+                ppds = np.array(val_obs_dict['ppds'])
+                
+                raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
+                raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
+                valid_pmvs = raw_pmv_values[raw_pmv_values != 0.0]
+                pmv_deviations_from_raw = np.abs(valid_pmvs[np.abs(valid_pmvs) > 0.5]) - 0.5
+                pmv_violation_flags = (np.abs(valid_pmvs) > 0.5).astype(int)
+                
+                pmv_violation_mean = pmv_violation_flags.mean() * 100 
+                pmv_violation_std = pmv_violation_flags.std(ddof=0) * 100
+                
+                valid_ppds = raw_ppd_values[raw_ppd_values != 5.0]
                 pmv_deviations = [v for v in val_obs_dict['pmv_deviations'] if v is not None]
                 co2_deviations = [v for v in val_obs_dict['co2_deviations'] if v is not None]
 
@@ -293,11 +302,12 @@ def train(config=None):
                 wandb.log({"final_val_co2_deviation_std":val_co2_deviation_std},step=episode * log_length)
                 wandb.log({"final_val_co2_deviation_min":val_co2_deviation_min},step=episode * log_length)
                 wandb.log({"final_val_co2_deviation_max":val_co2_deviation_max},step=episode * log_length)
-                #Temperature
+                #PMV,PPD
 
-                wandb.log({"final_val_pmv_violation_mean":val_pmv_violation_mean},step=episode * log_length)
-                wandb.log({"final_val_pmv_violation_std":val_pmv_violation_std},step=episode * log_length)
-                
+                wandb.log({"final_val_pmv_violation_mean":pmv_violation_mean},step=episode * log_length)
+                wandb.log({"final_val_pmv_violation_std":pmv_violation_std},step=episode * log_length)
+                wandb.log({"final_val_ppd_percentage_mean":np.mean(valid_ppds)},step=episode * log_length)
+                wandb.log({"final_val_ppd_percentage_mean":np.std(valid_ppds)},step=episode * log_length)
                 wandb.log({"final_val_pmv_deviation_mean":val_pmv_deviation_mean},step=episode * log_length)
                 wandb.log({"final_val_pmv_deviation_std":val_pmv_deviation_std},step=episode * log_length)
                 wandb.log({"final_val_pmv_deviation_min":val_pmv_deviation_min},step=episode * log_length)

@@ -54,8 +54,8 @@ seasons=("hot")
 #             "on_off05" "on_off075" "on_off1"
 #             "window_on_off" "window_schedule"
 #             "multispeed_setpoint")
-algorithms=("setpoint075" "setpoint1"
-            "on_off05" "on_off075" "on_off1"
+algorithms=("setpoint1"
+            "on_off1"
             "multispeed_setpoint" 
             )
 
