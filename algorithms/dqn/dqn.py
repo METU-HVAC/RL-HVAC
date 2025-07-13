@@ -57,6 +57,8 @@ class DQNAgent:
         gamma = (target_lr / initial_lr) ** (1 / num_steps)
         return gamma
     def reduce_lr(self):
+        if len(self.memory) < self.memory_capacity * 0.1:
+            return
         self.scheduler.step()
     def store_transition(self,state,action,next_state,reward):
         self.memory.push(state,action,next_state,reward)

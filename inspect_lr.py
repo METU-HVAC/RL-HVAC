@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import torch
 
-num_steps = 10
-initial_lr = 1e-3
+num_steps = 20
+initial_lr = 3e-4
 
 optimizer = torch.optim.Adam([torch.zeros(1)], lr=initial_lr)
 
