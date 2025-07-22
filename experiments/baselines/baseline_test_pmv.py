@@ -10,6 +10,9 @@ from algorithms.dqn.dqn import *
 from algorithms.onoff.on_off_controller import *
 from algorithms.setpoint.setpoint_controller import *
 from algorithms.classic_window.classic_window_controller import *
+from algorithms.adaptive_rbc.adaptive_rbc import AdaptivePMVController
+from algorithms.adaptive_rbc.adaptive_rbc import AdaptivePMVOnlyACController
+from algorithms.fan_controller.fan_controller import FanController
 from environments.reward import *
 from environments.environment import CO2_AND_TEMP_REWARD_CONFIG
 import torch
@@ -175,8 +178,14 @@ def train(config=None):
         elif agent_name == "window_schedule":
             agent = WindowScheduleController()
         elif agent_name == "single_speed_ac_only":
-            agent = SingleSpeedACOnlyController()    
-        
+            agent = SingleSpeedACOnlyController()
+        elif agent_name == "adaptive_rbc":
+            agent = AdaptivePMVController()
+        elif agent_name == "adaptive_pmv_only_ac":
+            agent = AdaptivePMVOnlyACController()
+        elif agent_name == "fan_controller":
+            agent = FanController()
+
         for episode in range(1, num_episodes + 1):
             with tqdm(total=len(val_chunks), 
                     desc=f"Episode {episode}", 

@@ -129,6 +129,7 @@ class MultiSpeedSetpointController():
             
         if occupancy > 0:
             if self.window_fan_speed > 0:
+                
                 if self.window_fan_speed == 0.5:
                     return self.summer_hvac_on_co2_05 if is_summer else self.winter_hvac_on_co2_05
                 elif self.window_fan_speed == 0.75:

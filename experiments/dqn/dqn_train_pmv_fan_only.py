@@ -29,30 +29,10 @@ observation_variables = [
     'window_fan_energy', 'pmv','ppd','total_electricity_HVAC',
 ]
 all_action_map = {
-    0 : [21, 22, 1.0, 0.0],
-    1 : [21, 22, 1.0, 0.5],
-    2 : [21, 22, 1.0, 0.75],
-    3 : [21, 22, 1.0, 1.0],
-    4 : [22, 23, 1.0, 0.0],
-    5 : [22, 23, 1.0, 0.5],
-    6 : [22, 23, 1.0, 0.75],
-    7 : [22, 23, 1.0, 1.0],
-    8 : [23, 24, 1.0, 0.0],
-    9 : [23, 24, 1.0, 0.5],
-    10 : [23, 24, 1.0, 0.75],
-    11 : [23, 24, 1.0, 1.0],
-    12 : [24, 25, 1.0, 0.0],
-    13 : [24, 25, 1.0, 0.5],
-    14 : [24, 25, 1.0, 0.75],
-    15 : [24, 25, 1.0, 1.0],
-    16 : [25, 26, 1.0, 0.0],
-    17 : [25, 26, 1.0, 0.5],
-    18 : [25, 26, 1.0, 0.75],
-    19 : [25, 26, 1.0, 1.0],
-    20 : [5 , 50, 0.0, 0.0], 
-    21 : [5 , 50, 0.0, 0.5],
-    22 : [5 , 50, 0.0, 0.75],
-    23 : [5 , 50, 0.0, 1.0]
+    0 : [5 , 50, 0.0, 0.0],
+    1 : [5 , 50, 0.0, 0.5],
+    2 : [5 , 50, 0.0, 0.75],
+    3 : [5 , 50, 0.0, 1.0]
 }
 
 SUMMER_START = (1, 1)  # March 1st
@@ -106,7 +86,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
     env = create_environment(env_id,start_date, end_date,season,CO2andPMVReward,episode_type=episode_type,timesteps_per_hour=timesteps_per_hour,reward_kwargs=reward_config)  # Create a new environment for the chunk
     
     state, info = env.reset()
-    combined_action = 20 #initially the the system is not working
+    combined_action = 0 #initially the the system is not working
 
     state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
     
@@ -193,7 +173,7 @@ def train(config=None):
         remove_previous_run_logs()
                 
         state_size =  12 # Adjust based on the size of your observation space
-        action_size = 24
+        action_size = 4
         train_interval = 96*2 # Train every n steps
         timesteps_per_hour = 4  # 15-minute intervals
         days_per_chunk = 8
@@ -555,24 +535,9 @@ def train(config=None):
             raw_pmv_deviations = final_obs_dict["pmv_deviations"]
             raw_co2_deviations = final_obs_dict["co2_deviations"]
             occupants = np.array(final_obs_dict["people_occupants"])
-            pmvs = np.array(final_obs_dict['pmvs'])
-            ppds = np.array(final_obs_dict['ppds'])
-            
-            raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
-            raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
-            valid_pmvs = raw_pmv_values[raw_pmv_values != 0.0]
-            pmv_deviations_from_raw = np.abs(valid_pmvs[np.abs(valid_pmvs) > 0.5]) - 0.5
-            pmv_violation_flags = (np.abs(valid_pmvs) > 0.5).astype(int)
-            
-            pmv_violation_mean = pmv_violation_flags.mean() * 100 
-            pmv_violation_std = pmv_violation_flags.std(ddof=0) * 100
-            
-            valid_ppds = raw_ppd_values[raw_ppd_values != 5.0]
+            pmvs = np.array(final_obs_dict["pmvs"])
+            ppds = np.array(final_obs_dict["ppds"])
 
-            pmv_deviations = [v for v in final_obs_dict['pmv_deviations'] if v is not None]
-            co2_deviations = [v for v in final_obs_dict['co2_deviations'] if v is not None]
-            final_val_pmv_deviation_mean = np.mean(pmv_deviations) if pmv_deviations else None
-            final_val_pmv_deviation_std = np.std(pmv_deviations) if pmv_deviations else None
             raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
             raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
 
@@ -584,6 +549,7 @@ def train(config=None):
             pmv_violation_std = pmv_violation_flags.std(ddof=0) * 100
             
             valid_ppds = raw_ppd_values[raw_ppd_values != 5.0]
+            
             # Log final timestep-level data
             for t in range(len(inside_temp_levels)):
                 wandb.log({
@@ -610,8 +576,8 @@ def train(config=None):
                 "final_val_co2_violation_%_mean": np.mean(final_val_co2_viol_list),
                 "final_val_co2_violation_%_std": np.std(final_val_co2_viol_list),
 
-                "final_val_pmv_deviation_mean": final_val_pmv_deviation_mean,
-                "final_val_pmv_deviation_std": final_val_pmv_deviation_std,
+                "final_val_pmv_deviation_mean": np.mean(pmv_deviations_from_raw),
+                "final_val_pmv_deviation_std": np.std(pmv_deviations_from_raw),
 
                 "final_val_co2_deviation_mean": np.mean(final_co2_deviations),
                 "final_val_co2_deviation_std": np.std(final_co2_deviations),

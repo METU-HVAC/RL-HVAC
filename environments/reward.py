@@ -465,7 +465,7 @@ class CO2andPMVReward(LinearReward):
             'is_occupied': is_occupied
         }
         return reward, reward_terms
-    def pmv_comfort_reward(self, pmv: float, max_penalty: float = -2.5, occupancy: float = 1.0) -> float:
+    def pmv_comfort_reward(self, pmv: float, max_penalty: float = -5.0, occupancy: float = 1.0) -> float:
         """
         Normalized comfort reward centered at PMV = 0.
 
@@ -491,10 +491,11 @@ class CO2andPMVReward(LinearReward):
             # Linearly interpolate from 1 (at 0) to 0 (at ±0.5)
             return 1.0 - 2 * abs_pmv
         else:
-            # Linear penalty beyond comfort zone
-            penalty = (abs_pmv - 0.5)
-            reward = -penalty  # 1 unit deviation = –1 reward
-            return max(reward, max_penalty)
+            # # Linear penalty beyond comfort zone
+            # penalty = (abs_pmv - 0.5)
+            # reward = -penalty  # 1 unit deviation = –1 reward
+            # return max(reward, max_penalty)
+            return max_penalty
     def _get_pmv_violation(self, obs_dict: Dict[str, Any]) -> Tuple[float, float]:
         """
         Compute PMV reward and deviation based on occupancy.
@@ -520,13 +521,15 @@ class CO2andPMVReward(LinearReward):
     def _get_co2_reward(self, co2_concentration: float,people_count: int,threshold: float = 700.0, max_limit: float = 900.0, min_penalty: float = -5.0) -> float:
         if people_count == 0:
             return 0
-        if co2_concentration <= threshold:
+        if co2_concentration <= 800:
             return 1.0
-        elif co2_concentration >= max_limit:
-            return min_penalty
         else:
-            slope = (1.0 - min_penalty) / (max_limit - threshold)
-            return 1.0-slope * (co2_concentration - threshold)
+            return min_penalty
+        # elif co2_concentration >= max_limit:
+        #     return min_penalty
+        # else:
+        #     slope = (1.0 - min_penalty) / (max_limit - threshold)
+        #     return 1.0-slope * (co2_concentration - threshold)
 
     def _get_reward(self, window_energy_penalty:float,ac_energy_penalty: float, co2_penalty: float,pmv_penalty: float,occupancy: float) -> Tuple[float, float, float,float]:
         """
