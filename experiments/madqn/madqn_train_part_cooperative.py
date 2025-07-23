@@ -430,8 +430,8 @@ def train(config=None):
             "memory_capacity": memory_capacity,
             "layer_sizes": layer_sizes,
         }
-        fan_agent = DQNAgent(12, 4,total_training_steps,num_episodes,training_config)
-        ac_agent = DQNAgent(12, 10,total_training_steps,num_episodes,training_config)
+        fan_agent = DQNAgent(5, 4,total_training_steps,num_episodes,training_config)
+        ac_agent = DQNAgent(9, 10,total_training_steps,num_episodes,training_config)
         best_ac_val_reward = -float('inf')
         best_fan_val_reward = -float('inf')
         best_ac_model_path = None
