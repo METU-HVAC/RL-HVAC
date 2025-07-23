@@ -12,7 +12,10 @@ from experiments.madqn import madqn_train
 from experiments.dqn import dqn_train 
 from experiments.dqn import dqn_train_pmv 
 from experiments.madqn import ac_only_train
-from experiments.madqn import madqn_train_pmv
+from experiments.madqn import madqn_train_fully_competetive
+from experiments.madqn import madqn_train_fully_competetive
+from experiments.madqn import madqn_train_part_competetive
+from experiments.madqn import madqn_train_part_cooperative
 from experiments.dqn import dqn_train_pmv_fan_only
 from experiments.dqn import dqn_train_pmv_ac_only
 from utils.experiment_utils import create_experiment_name
@@ -23,7 +26,12 @@ def parse_args():
     p.add_argument("--project",default=os.environ.get("WANDB_PROJECT", "A403-Train"))
     p.add_argument("--entity",default=os.environ.get("WANDB_ENTITY"))
     p.add_argument("--count",type=int,default=None)
-    p.add_argument("--algorithm", required=True, choices=["madqn", "dqn" , "dqn_pmv","ac_only","madqn_pmv","dqn_pmv_fan_only","dqn_pmv_ac_only"], help="RL algorithm to use")
+    p.add_argument("--algorithm", required=True, choices=["madqn", "dqn" , "dqn_pmv","ac_only",
+                                                          "madqn_fully_competitive",
+                                                          "madqn_fully_cooperative",
+                                                          "madqn_part_competitive",
+                                                          "madqn_part_cooperative",
+                                                          "dqn_pmv_fan_only","dqn_pmv_ac_only"], help="RL algorithm to use")
     return p.parse_args()
 
 
@@ -39,7 +47,7 @@ def main():
     # Create experiment save dir
     train_season = "hot"
     ENV_ID ="A403mediumfanger"
-    NUM_EPISODES = 10             
+    NUM_EPISODES = 10           
     unique_experiment_name = f"{train_season}_{ENV_ID}_train_{timestamp}"
    
     experiment_save_dir_name = os.path.join(run_dir, "results", args.algorithm, unique_experiment_name)
@@ -63,9 +71,9 @@ def main():
                     'learning_rate':{'values': [3e-4,1e-3,3e-3]}, #{'values': [3e-4,1e-3,3e-3]},
                     'lambda_energy': {'values': [1/2_000_000,1/1_600_000,1/1_200_000]}, # [1/2_000_000,1/1_600_000,1/1_200_000]
                     'gamma': {'value':0.95}, # [0.90,0.95,0.99]
-                    'co2_weight':{'value':0},#{'values':[0.30,0.40,0.50]},#{'min':0.30,'max':0.60},# {'min':0.30,'max':0.60}, # 0.2 yapma 
+                    'co2_weight':{'min':0.10,'max':0.90},#{'values':[0.30,0.40,0.50]},#{'min':0.30,'max':0.60},# {'min':0.30,'max':0.60}, # 0.2 yapma 
                     #'temp_weight': {'min':0.20,'max':0.80}, #[0.40,0.50,0.60]
-                    'pmv_weight': {'min':0.40,'max':0.90},#{'values':[0.40,0.50,0.60,0.70]},#{'values':[0.50,0.60,0.70]},# {'min':0.40,'max':0.70},
+                    'pmv_weight': {'min':0.10,'max':0.90},#{'values':[0.40,0.50,0.60,0.70]},#{'values':[0.50,0.60,0.70]},# {'min':0.40,'max':0.70},
                     'switching_penalty': {'value': 0},#{'values':[0.00,0.05,0.10]},
                     'experiment_save_dir': {'value': experiment_save_dir_name},
                     'train_season': {'value': train_season},
@@ -98,8 +106,14 @@ def main():
     #     train_func = five_zone_train.train
     elif args.algorithm == "dqn_pmv":
         train_func = dqn_train_pmv.train
-    elif args.algorithm == "madqn_pmv":
-        train_func = madqn_train_pmv.train
+    elif args.algorithm == "madqn_fully_competitive":
+        train_func = madqn_train_fully_competetive.train
+    elif args.algorithm == "madqn_fully_cooperative":
+        train_func = madqn_train_fully_competetive.train
+    elif args.algorithm == "madqn_part_competitive":
+        train_func = madqn_train_part_competetive.train
+    elif args.algorithm == "madqn_part_cooperative":
+        train_func = madqn_train_part_cooperative.train
     elif args.algorithm == "dqn_pmv_fan_only":
         train_func = dqn_train_pmv_fan_only.train
     elif args.algorithm == "dqn_pmv_ac_only":

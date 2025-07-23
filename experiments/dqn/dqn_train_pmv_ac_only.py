@@ -359,14 +359,8 @@ def train(config=None):
                     window_fan_speeds = val_obs_dict['window_fan_speeds']
                     ac_fan_speeds = val_obs_dict['ac_fan_speeds']
                     raw_actions = val_obs_dict['raw_actions']
-                    raw_pmv_deviations = val_obs_dict['pmv_deviations']
-                    raw_co2_deviations = val_obs_dict['co2_deviations']
                     occupants = np.array(val_obs_dict['people_occupants'])
-                    pmvs = np.array(val_obs_dict['pmvs'])
-                    ppds = np.array(val_obs_dict['ppds'])
-                    
-                    raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
-                    raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
+
 
                     pbar.set_postfix_str(f"Val Chunk {pbar.n + 1-len(train_chunks)}/{len(val_chunks)}")
                     pbar.update(1)
@@ -506,10 +500,7 @@ def train(config=None):
 
                     pmv_violations = [v for v in obs_dict['pmv_violations'] if v is not None]
                     co2_violations = [v for v in obs_dict['co2_violations'] if v is not None]
-                    
-
-                    final_pmv_deviations.extend(pmv_devs)
-                    final_co2_deviations.extend(co2_devs)
+                
 
                     pmv_viol_percentage = sum(pmv_violations) / len(pmv_violations) * 100 if pmv_violations else 0
                     co2_viol_percentage = sum(co2_violations) / len(co2_violations) * 100 if co2_violations else 0
@@ -556,6 +547,7 @@ def train(config=None):
 
             pmv_deviations = [v for v in final_obs_dict['pmv_deviations'] if v is not None]
             co2_deviations = [v for v in final_obs_dict['co2_deviations'] if v is not None]
+            final_co2_deviations.extend(co2_deviations)
             final_val_pmv_deviation_min = np.min(pmv_deviations) if pmv_deviations else None
             final_val_pmv_deviation_max = np.max(pmv_deviations) if pmv_deviations else None
             final_val_pmv_deviation_mean = np.mean(pmv_deviations) if pmv_deviations else None
@@ -565,11 +557,11 @@ def train(config=None):
 
             valid_pmvs = raw_pmv_values[raw_pmv_values != 0.0]
             pmv_deviations_from_raw = np.abs(valid_pmvs[np.abs(valid_pmvs) > 0.5]) - 0.5
-            pmv_violation_flags = (np.abs(valid_pmvs) > 0.5).astype(int)
             
-            pmv_violation_mean = pmv_violation_flags.mean() * 100 
-            pmv_violation_std = pmv_violation_flags.std(ddof=0) * 100
             
+            
+            pmv_violation_mean = np.mean(final_val_pmv_viol_list)
+            pmv_violation_std = np.std(final_val_pmv_viol_list)
             
             valid_ppds = raw_ppd_values[raw_ppd_values != 5.0]
             

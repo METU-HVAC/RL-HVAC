@@ -34,7 +34,7 @@ observation_variables = [
     'outdoor_temperature', 'outdoor_humidity',
     'htg_setpoint', 'clg_setpoint', 'air_temperature',
     'air_humidity', 'people_occupant', 'air_co2',
-    'window_fan_energy', 'total_electricity_HVAC','pmv','ppd'
+    'window_fan_energy', 'pmv','ppd','total_electricity_HVAC'
 ]
 all_action_map = {
     0 : [21, 22, 1.0, 0.0],
@@ -57,10 +57,26 @@ all_action_map = {
     17 : [25, 26, 1.0, 0.5],
     18 : [25, 26, 1.0, 0.75],
     19 : [25, 26, 1.0, 1.0],
-    20 : [5 , 50, 0.0, 0.0], 
-    21 : [5 , 50, 0.0, 0.5],
-    22 : [5 , 50, 0.0, 0.75],
-    23 : [5 , 50, 0.0, 1.0]
+    20 : [26, 27, 1.0, 0.0],
+    21 : [26, 27, 1.0, 0.5],
+    22 : [26, 27, 1.0, 0.75],
+    23 : [26, 27, 1.0, 1.0],
+    24 : [27, 28, 1.0, 0.0],
+    25 : [27, 28, 1.0, 0.5],
+    26 : [27, 28, 1.0, 0.75],
+    27 : [27, 28, 1.0, 1.0],
+    28 : [28, 29, 1.0, 0.0],
+    29 : [28, 29, 1.0, 0.5],
+    30 : [28, 29, 1.0, 0.75],
+    31 : [28, 29, 1.0, 1.0],
+    32 : [29, 30, 1.0, 0.0],
+    33 : [29, 30, 1.0, 0.5],
+    34 : [29, 30, 1.0, 0.75],
+    35 : [29, 30, 1.0, 1.0],
+    36 : [5 , 50, 0.0, 0.0],
+    37 : [5 , 50, 0.0, 0.5],
+    38 : [5 , 50, 0.0, 0.75],
+    39 : [5 , 50, 0.0, 1.0]
 }
 fan_map = {
     0: 0.0,   # Off
@@ -70,12 +86,16 @@ fan_map = {
 }
 
 hvac_map = {
-    0: [5.0, 50.0, 0.0],     # Off
-    1: [21.0, 22.0, 1.0], 
-    2: [22.0, 23.0, 1.0],
-    3: [23.0, 24.0, 1.0],
-    4: [24.0, 25.0, 1.0],
-    5: [25.0, 26.0, 1.0],     
+    0 : [21, 22, 1.0],
+    1 : [22, 23, 1.0],
+    2 : [23, 24, 1.0],
+    3 : [24, 25, 1.0],
+    4 : [25, 26, 1.0],
+    5 : [26, 27, 1.0],
+    6 : [27, 28, 1.0],
+    7 : [28, 29, 1.0],
+    8 : [29, 30, 1.0],
+    9 : [5 , 50, 0.0]# off
 }
 
 raw_observations = []
@@ -132,6 +152,8 @@ def get_agent_reward(agent_name, info):
         return info["co2_term"] + info["window_energy_term"]
     elif agent_name == "HVAC":
         return info["pmv_term"] + info["ac_energy_term"]
+    elif agent_name == "CombinedAgent":
+        return info["co2_term"] + info["pmv_term"] + info["window_energy_term"] + info["ac_energy_term"]
     else:
         raise ValueError(f"Unknown agent: {agent_name}")
 from itertools import product
@@ -218,8 +240,8 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
         normalized_state = torch.tensor(min_max_normalize(state,obs_mins_pmv,obs_maxs_pmv), dtype=torch.float32, device=device)
         
         #normalized_reduced_state = torch.tensor(normalized_reduced_state, dtype=torch.float32, device=device)
-        fan_obs = get_agent_observation_dict_based("WindowFan", normalized_state, action=combined_action)
-        hvac_obs = get_agent_observation_dict_based("HVAC", normalized_state, action=combined_action)
+        fan_obs = get_agent_observation_dict_based("CombinedAgent", normalized_state, action=combined_action)
+        hvac_obs = get_agent_observation_dict_based("CombinedAgent", normalized_state, action=combined_action)
         
         fan_obs_tensor = torch.tensor(fan_obs, dtype=torch.float32, device=device).unsqueeze(0)
         hvac_obs_tensor = torch.tensor(hvac_obs, dtype=torch.float32, device=device).unsqueeze(0)
@@ -262,8 +284,8 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
         hvac_reward += hvac_penalty
         # Get next observations for both agents
         normalized_next_state = torch.tensor(min_max_normalize(next_state,obs_mins_pmv,obs_maxs_pmv), dtype=torch.float32, device=device)
-        next_fan_obs = get_agent_observation_dict_based("WindowFan", normalized_next_state, action=combined_action)
-        next_hvac_obs = get_agent_observation_dict_based("HVAC", normalized_next_state, action=combined_action)
+        next_fan_obs = get_agent_observation_dict_based("CombinedAgent", normalized_next_state, action=combined_action)
+        next_hvac_obs = get_agent_observation_dict_based("CombinedAgent", normalized_next_state, action=combined_action)
         
         next_fan_obs_tensor = torch.tensor(next_fan_obs, dtype=torch.float32, device=device).unsqueeze(0)
         next_hvac_obs_tensor = torch.tensor(next_hvac_obs, dtype=torch.float32, device=device).unsqueeze(0)
@@ -797,9 +819,22 @@ def train(config=None):
             raw_pmv_deviations = final_obs_dict["pmv_deviations"]
             raw_co2_deviations = final_obs_dict["co2_deviations"]
             occupants = np.array(final_obs_dict["people_occupants"])
-            pmvs = np.array(final_obs_dict["pmvs"])
-            ppds = np.array(final_obs_dict["ppds"])
-
+            pmvs = np.array(final_obs_dict['pmvs'])
+            ppds = np.array(final_obs_dict['ppds'])
+            
+            raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
+            raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
+            valid_pmvs = raw_pmv_values[raw_pmv_values != 0.0]
+            pmv_deviations_from_raw = np.abs(valid_pmvs[np.abs(valid_pmvs) > 0.5]) - 0.5
+            pmv_violation_flags = (np.abs(valid_pmvs) > 0.5).astype(int)
+            
+            pmv_violation_mean = pmv_violation_flags.mean() * 100 
+            pmv_violation_std = pmv_violation_flags.std(ddof=0) * 100
+            
+            pmv_deviations = [v for v in final_obs_dict['pmv_deviations'] if v is not None]
+            co2_deviations = [v for v in final_obs_dict['co2_deviations'] if v is not None]
+            final_val_pmv_deviation_mean = np.mean(pmv_deviations) if pmv_deviations else None
+            final_val_pmv_deviation_std = np.std(pmv_deviations) if pmv_deviations else None
             raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
             raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
 
@@ -840,8 +875,8 @@ def train(config=None):
                 "final_val_co2_violation_%_mean": np.mean(final_val_co2_viol_list),
                 "final_val_co2_violation_%_std": np.std(final_val_co2_viol_list),
 
-                "final_val_pmv_deviation_mean": np.mean(pmv_deviations_from_raw),
-                "final_val_pmv_deviation_std": np.std(pmv_deviations_from_raw),
+                "final_val_pmv_deviation_mean": final_val_pmv_deviation_mean,
+                "final_val_pmv_deviation_std": final_val_pmv_deviation_std,
 
                 "final_val_co2_deviation_mean": np.mean(final_co2_deviations),
                 "final_val_co2_deviation_std": np.std(final_co2_deviations),

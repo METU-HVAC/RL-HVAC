@@ -296,8 +296,8 @@ def train(config=None):
                 log_length = len(val_obs_dict['time_labels'])
                 #Power
                 
-                wandb.log({"final_val_total_power_kwh_mean": val_power_mean},step=episode * log_length)
-                wandb.log({"final_val_total_power_kwh_std": val_power_std},step=episode * log_length)
+                wandb.log({"final_val_power_kWh_mean": val_power_mean},step=episode * log_length)
+                wandb.log({"final_val_power_kWh_std": val_power_std},step=episode * log_length)
                 wandb.log({"final_val_hvac_power_kwh_mean": val_hvac_power_mean},step=episode * log_length)
                 wandb.log({"final_val_hvac_power_kwh_std": val_hvac_power_std},step=episode * log_length)
                 wandb.log({"final_val_fan_power_kwh_mean": val_fan_power_mean},step=episode * log_length)
@@ -316,7 +316,7 @@ def train(config=None):
                 wandb.log({"final_val_pmv_violation_mean":pmv_violation_mean},step=episode * log_length)
                 wandb.log({"final_val_pmv_violation_std":pmv_violation_std},step=episode * log_length)
                 wandb.log({"final_val_ppd_percentage_mean":np.mean(valid_ppds)},step=episode * log_length)
-                wandb.log({"final_val_ppd_percentage_mean":np.std(valid_ppds)},step=episode * log_length)
+                wandb.log({"final_val_ppd_percentage_std":np.std(valid_ppds)},step=episode * log_length)
                 wandb.log({"final_val_pmv_deviation_mean":val_pmv_deviation_mean},step=episode * log_length)
                 wandb.log({"final_val_pmv_deviation_std":val_pmv_deviation_std},step=episode * log_length)
                 wandb.log({"final_val_pmv_deviation_min":val_pmv_deviation_min},step=episode * log_length)
