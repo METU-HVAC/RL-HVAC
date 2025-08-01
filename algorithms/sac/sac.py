@@ -121,7 +121,7 @@ def init_weights(m):
         torch.nn.init.constant_(m.bias, 0)
 
 class SACDiscrete(nn.Module):
-    def __init__(self, obs_dim, action_dim, updates_per_step, device, learning_rate, buffer_size, batch_size):
+    def __init__(self, obs_dim, action_dim, updates_per_step, device, learning_rate, buffer_size, batch_size, num_of_episodes):
         super(SACDiscrete, self).__init__()
         self.obs_dim = obs_dim
         self.action_dim = action_dim
@@ -136,8 +136,9 @@ class SACDiscrete(nn.Module):
         self.updates_per_step = updates_per_step
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=self.learning_rate)
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=self.learning_rate)
-        self.actor_scheduler = StepLR(self.actor_optimizer, step_size=1, gamma=0.9)  # Reduce LR by 0.1 every epochs
-        self.critic_scheduler = StepLR(self.critic_optimizer, step_size=1, gamma=0.9)  # Reduce LR by 0.1 every epochs
+        self.actor_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.actor_optimizer, T_max=num_of_episodes, eta_min=learning_rate/10)
+        self.critic_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.critic_optimizer, T_max=num_of_episodes, eta_min=learning_rate/10)
+
         # Automatic entropy tuning
         self.target_entropy = -np.log(1.0 / action_dim) * 0.98
         self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
@@ -147,6 +148,8 @@ class SACDiscrete(nn.Module):
         self.replay_buffer = ReplayBuffer(obs_dim, self.buffer_size, self.batch_size, self.device)
         self.log_timestep = 0
     def reduce_lr(self):
+        if len(self.replay_buffer) < self.buffer_size * 0.1:
+            return
         self.actor_scheduler.step()
         self.critic_scheduler.step()
     def choose_action(self, state, greedy=False):

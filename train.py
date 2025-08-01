@@ -18,6 +18,9 @@ from experiments.madqn import madqn_train_part_competetive
 from experiments.madqn import madqn_train_part_cooperative
 from experiments.dqn import dqn_train_pmv_fan_only
 from experiments.dqn import dqn_train_pmv_ac_only
+from experiments.sac import sac_train_pmv
+from experiments.sac import masac_train_fully_competetive
+from experiments.sac import masac_train_fully_cooperative
 from utils.experiment_utils import create_experiment_name
 def parse_args():
     p = argparse.ArgumentParser(description="Main entrypoint for RL-HVAC sweep/agent")
@@ -31,7 +34,9 @@ def parse_args():
                                                           "madqn_fully_cooperative",
                                                           "madqn_part_competitive",
                                                           "madqn_part_cooperative",
-                                                          "dqn_pmv_fan_only","dqn_pmv_ac_only"], help="RL algorithm to use")
+                                                          "dqn_pmv_fan_only","dqn_pmv_ac_only",
+                                                          "sac","masac_fully_competetive", "masac_fully_cooperative"
+                                                          ], help="RL algorithm to use")
     return p.parse_args()
 
 
@@ -47,7 +52,7 @@ def main():
     # Create experiment save dir
     train_season = "hot"
     ENV_ID ="A403mediumfanger"
-    NUM_EPISODES = 10           
+    NUM_EPISODES = 10          
     unique_experiment_name = f"{train_season}_{ENV_ID}_train_{timestamp}"
    
     experiment_save_dir_name = os.path.join(run_dir, "results", args.algorithm, unique_experiment_name)
@@ -63,25 +68,25 @@ def main():
     if args.sweep_id is None:
         # Build your sweep config dict however you like:
         sweep_config = {
-            "method": "random",
+            "method": "grid",
             "project": "A403-Train",
             "name": name,
             "metric": {"name": "final_val_power_kWh_mean", "goal": "minimize"},
             "parameters": {
-                    'learning_rate':{'values': [3e-4,1e-3,3e-3]}, #{'values': [3e-4,1e-3,3e-3]},
-                    'lambda_energy': {'values': [1/2_000_000,1/1_600_000,1/1_200_000]}, # [1/2_000_000,1/1_600_000,1/1_200_000]
+                    'learning_rate':{'value': 3e-3}, #{'values': [3e-4,1e-3,3e-3]},
+                    'lambda_energy': {'value': 1/1_600_000}, # [1/2_000_000,1/1_600_000,1/1_200_000]
                     'gamma': {'value':0.95}, # [0.90,0.95,0.99]
-                    'co2_weight':{'min':0.10,'max':0.90},#{'values':[0.30,0.40,0.50]},#{'min':0.30,'max':0.60},# {'min':0.30,'max':0.60}, # 0.2 yapma 
+                    'co2_weight':{'values':[0.10,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90]},#{'values':[0.30,0.40,0.50]},#{'min':0.30,'max':0.60},# {'min':0.30,'max':0.60}, # 0.2 yapma 
                     #'temp_weight': {'min':0.20,'max':0.80}, #[0.40,0.50,0.60]
-                    'pmv_weight': {'min':0.10,'max':0.90},#{'values':[0.40,0.50,0.60,0.70]},#{'values':[0.50,0.60,0.70]},# {'min':0.40,'max':0.70},
+                    'pmv_weight': {'values':[0.10,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90]},#{'values':[0.40,0.50,0.60,0.70]},#{'values':[0.50,0.60,0.70]},# {'min':0.40,'max':0.70},
                     'switching_penalty': {'value': 0},#{'values':[0.00,0.05,0.10]},
                     'experiment_save_dir': {'value': experiment_save_dir_name},
                     'train_season': {'value': train_season},
                     'agent_count': {'value':100},
                     'num_episodes': {'value': NUM_EPISODES},
-                    'layer_sizes': {'values': [[128,128],[256,256],[128,128,128],[256,128,64]]},
+                    'layer_sizes': {'value': [256,256,256]},
                     'env_id': {'value': ENV_ID},
-                    'memory_capacity': {'values': [52600,2*52600,4*52600]}, # [52600,2*52600,4*52600]
+                    'memory_capacity': {'value': 2*52600}, # [52600,2*52600,4*52600]
                 }
         }
         sweep_id = wandb.sweep(sweep_config, project=args.project, entity=args.entity)
@@ -118,6 +123,13 @@ def main():
         train_func = dqn_train_pmv_fan_only.train
     elif args.algorithm == "dqn_pmv_ac_only":
         train_func = dqn_train_pmv_ac_only.train
+    elif args.algorithm == "sac":
+        train_func = sac_train_pmv.train
+    elif args.algorithm == "masac_fully_competetive":
+        train_func = masac_train_fully_competetive.train
+    elif args.algorithm == "masac_fully_cooperative":
+        train_func = masac_train_fully_cooperative.train
+    
     else:
         raise ValueError("Unsupported algorithm")
     # 5) Launch the specified number of agents (in this container it's usually 1)
