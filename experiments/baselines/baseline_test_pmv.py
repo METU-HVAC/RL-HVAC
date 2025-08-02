@@ -12,7 +12,7 @@ from algorithms.setpoint.setpoint_controller import *
 from algorithms.classic_window.classic_window_controller import *
 from algorithms.adaptive_rbc.adaptive_rbc import AdaptivePMVController
 from algorithms.adaptive_rbc.adaptive_rbc import AdaptivePMVOnlyACController
-from algorithms.fan_controller.fan_controller import FanController
+from algorithms.fan_controller.fan_controller import *
 from environments.reward import *
 from environments.environment import CO2_AND_TEMP_REWARD_CONFIG
 import torch
@@ -31,8 +31,8 @@ import pandas as pd
 # htg_setpoint': np.float32(4.13), 'clg_setpoint': np.float32(50.0), 'air_temperature': np.float32(26.72595), 
 # 'air_humidity': np.float32(40.54236), 'people_occupant': np.float32(0.0), 'air_co2': np.float32(456.72827), 
 # 'window_fan_energy': np.float32(0.0), 'total_electricity_HVAC': np.float32(0.0)}
-SUMMER_START = (6, 1)  # March 1st
-SUMMER_END = (9, 30)  # October 30th
+SUMMER_START = (6, 1)  # June 1st
+SUMMER_END = (9, 30)  # Sept 30th
 def is_summer_by_month(current_month: int, summer_start: tuple, summer_end: tuple) -> bool:
     start_month = summer_start[0]
     end_month = summer_end[0]
@@ -167,6 +167,8 @@ def train(config=None):
             agent = SetpointController(window_fan_speed=1.0)
         elif agent_name == "multispeed_setpoint":
             agent = MultiSpeedSetpointController()
+        elif agent_name == "on_off_limit_ac":
+            agent = OnOffController(window_fan_speed=0.0)
         elif agent_name == "on_off05":  
             agent = OnOffController(window_fan_speed=0.5)
         elif agent_name == "on_off075":
@@ -183,8 +185,23 @@ def train(config=None):
             agent = AdaptivePMVController()
         elif agent_name == "adaptive_pmv_only_ac":
             agent = AdaptivePMVOnlyACController()
-        elif agent_name == "fan_controller":
+        elif agent_name == "fan_controller_multi_speed":
             agent = FanController()
+        elif agent_name == "fan_controller_hysteresis05":
+            agent = HysteresisFanController(set_fan_speed=0.5)
+        elif agent_name == "fan_controller_hysteresis075":
+            agent = HysteresisFanController(set_fan_speed=0.75)
+        elif agent_name == "fan_controller_hysteresis1":
+            agent = HysteresisFanController(set_fan_speed=1.0)
+        elif agent_name == "on_off_fan_controller0.5":
+            agent = OnOffFanController(set_fan_speed=0.5)
+        elif agent_name == "on_off_fan_controller0.75":
+            agent = OnOffFanController(set_fan_speed=0.75)
+        elif agent_name == "on_off_fan_controller1":
+            agent = OnOffFanController(set_fan_speed=1.0)
+        else:
+            raise ValueError(f"Unknown agent name: {agent_name}")
+        
 
         for episode in range(1, num_episodes + 1):
             with tqdm(total=len(val_chunks), 

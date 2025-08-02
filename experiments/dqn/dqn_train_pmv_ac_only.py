@@ -76,10 +76,10 @@ def get_agent_observation_dict_based(agent_name: str, observation: List[float], 
     if agent_name == "WindowFan":
         keys = ['hour', 'air_co2', 'window_fan_energy', 'people_occupant','weekday']
     elif agent_name == "HVAC":
-        keys = ['hour','outdoor_temperature','air_temperature', 'people_occupant', 'window_fan_speed','weekday', 'total_electricity_HVAC','pmv','ppd']
+        keys = ['hour','outdoor_temperature','air_temperature', 'air_humidity','people_occupant','weekday', 'total_electricity_HVAC','pmv','ppd']
     elif agent_name == "CombinedAgent":
-        keys = ['hour', 'outdoor_temperature', 'outdoor_humidity', 'air_temperature', 'people_occupant', 
-                'window_fan_speed', 'total_electricity_HVAC','window_fan_energy','air_co2','weekday','pmv','ppd']
+        keys = ['hour', 'outdoor_temperature', 'outdoor_humidity', 'air_temperature', 'people_occupant' 
+                , 'total_electricity_HVAC','window_fan_energy','air_co2','weekday','pmv','ppd']
     else:
         raise ValueError(f"Unknown agent: {agent_name}")
     
@@ -107,7 +107,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
 
         normalized_state = torch.tensor(min_max_normalize(state,obs_mins_pmv,obs_maxs_pmv), dtype=torch.float32, device=device)
         
-        combined_obs = get_agent_observation_dict_based("CombinedAgent", normalized_state, action=combined_action)
+        combined_obs = get_agent_observation_dict_based("HVAC", normalized_state, action=combined_action)
         combined_obs_tensor = torch.tensor(combined_obs, dtype=torch.float32, device=device).unsqueeze(0)
         
         if episode_type == "Training":
@@ -129,7 +129,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
         #     reward -= 0.1
         # previous_action = action.item()
         normalized_next_state = torch.tensor(min_max_normalize(next_state,obs_mins_pmv,obs_maxs_pmv), dtype=torch.float32, device=device)
-        next_obs = get_agent_observation_dict_based("CombinedAgent", normalized_next_state, action=combined_action)
+        next_obs = get_agent_observation_dict_based("HVAC", normalized_next_state, action=combined_action)
         next_obs_tensor = torch.tensor(next_obs, dtype=torch.float32, device=device).unsqueeze(0)
     
         if episode_type == "Training":
@@ -177,7 +177,7 @@ def train(config=None):
 
         remove_previous_run_logs()
                 
-        state_size =  12 # Adjust based on the size of your observation space
+        state_size =  9 # Adjust based on the size of your observation space
         action_size = 10
         train_interval = 96*2 # Train every n steps
         timesteps_per_hour = 4  # 15-minute intervals
@@ -385,9 +385,16 @@ def train(config=None):
                 val_pmv_violation_std = np.std(val_pmv_viol_percentage_list)
                 val_co2_violation_mean = np.mean(val_co2_viol_percentage_list)
                 val_co2_violation_std = np.std(val_co2_viol_percentage_list)
-                
+                raw_pmv_deviations = val_obs_dict['pmv_deviations']
+                raw_co2_deviations = val_obs_dict['co2_deviations']
                 pmv_deviations = [v for v in val_obs_dict['pmv_deviations'] if v is not None]
                 co2_deviations = [v for v in val_obs_dict['co2_deviations'] if v is not None]
+                occupants = np.array(val_obs_dict['people_occupants'])
+                pmvs = np.array(val_obs_dict['pmvs'])
+                ppds = np.array(val_obs_dict['ppds'])
+                
+                raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
+                raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
 
                 val_pmv_deviation_min = np.min(pmv_deviations) if pmv_deviations else None
                 val_pmv_deviation_max = np.max(pmv_deviations) if pmv_deviations else None

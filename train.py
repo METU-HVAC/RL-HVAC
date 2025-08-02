@@ -82,7 +82,7 @@ def main():
                     'switching_penalty': {'value': 0},#{'values':[0.00,0.05,0.10]},
                     'experiment_save_dir': {'value': experiment_save_dir_name},
                     'train_season': {'value': train_season},
-                    'agent_count': {'value':100},
+                    'agent_count': {'value': 81},
                     'num_episodes': {'value': NUM_EPISODES},
                     'layer_sizes': {'value': [256,256,256]},
                     'env_id': {'value': ENV_ID},

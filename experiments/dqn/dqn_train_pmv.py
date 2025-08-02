@@ -109,7 +109,7 @@ def get_agent_observation_dict_based(agent_name: str, observation: List[float], 
     elif agent_name == "HVAC":
         keys = ['hour','outdoor_temperature','air_temperature', 'people_occupant', 'window_fan_speed','weekday', 'total_electricity_HVAC','pmv','ppd']
     elif agent_name == "CombinedAgent":
-        keys = ['hour', 'outdoor_temperature', 'outdoor_humidity', 'air_temperature', 'people_occupant', 
+        keys = ['hour', 'outdoor_temperature', 'outdoor_humidity', 'air_temperature', 'air_humidity', 'people_occupant', 
                 'window_fan_speed', 'total_electricity_HVAC','window_fan_energy','air_co2','weekday','pmv','ppd']
     else:
         raise ValueError(f"Unknown agent: {agent_name}")
@@ -208,7 +208,7 @@ def train(config=None):
 
         remove_previous_run_logs()
                 
-        state_size =  12 # Adjust based on the size of your observation space
+        state_size =  13 # Adjust based on the size of your observation space
         action_size = 40
         train_interval = 96*2 # Train every n steps
         timesteps_per_hour = 4  # 15-minute intervals

@@ -102,7 +102,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
 
         normalized_state = torch.tensor(min_max_normalize(state,obs_mins_pmv,obs_maxs_pmv), dtype=torch.float32, device=device)
         
-        combined_obs = get_agent_observation_dict_based("CombinedAgent", normalized_state, action=combined_action)
+        combined_obs = get_agent_observation_dict_based("WindowFan", normalized_state, action=combined_action)
         combined_obs_tensor = torch.tensor(combined_obs, dtype=torch.float32, device=device).unsqueeze(0)
         
         if episode_type == "Training":
@@ -124,7 +124,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
         #     reward -= 0.1
         # previous_action = action.item()
         normalized_next_state = torch.tensor(min_max_normalize(next_state,obs_mins_pmv,obs_maxs_pmv), dtype=torch.float32, device=device)
-        next_obs = get_agent_observation_dict_based("CombinedAgent", normalized_next_state, action=combined_action)
+        next_obs = get_agent_observation_dict_based("WindowFan", normalized_next_state, action=combined_action)
         next_obs_tensor = torch.tensor(next_obs, dtype=torch.float32, device=device).unsqueeze(0)
     
         if episode_type == "Training":
@@ -172,7 +172,7 @@ def train(config=None):
 
         remove_previous_run_logs()
                 
-        state_size =  12 # Adjust based on the size of your observation space
+        state_size =  5 # Adjust based on the size of your observation space
         action_size = 4
         train_interval = 96*2 # Train every n steps
         timesteps_per_hour = 4  # 15-minute intervals
@@ -225,7 +225,7 @@ def train(config=None):
         training_config = {
             "batch_size": 64,
             "gamma": gamma,
-            "eps_start": 0.9,
+            "eps_start": 0.9, 
             "eps_end": 0.01,
             "eps_decay": 5,
             "tau": 0.005,

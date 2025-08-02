@@ -54,9 +54,10 @@ seasons=("hot")
 #             "on_off05" "on_off075" "on_off1"
 #             "window_on_off" "window_schedule"
 #             "multispeed_setpoint")
-algorithms=("adaptive_pmv_only_ac" "fan_controller" "adaptive_rbc")
+#algorithms=("adaptive_pmv_only_ac" "fan_controller" "adaptive_rbc")
 #algorithms=("adaptive_pmv_only_ac")        
 
+algorithms=("on_off1" "multispeed_setpoint")
 # Loop through all combinations
 for room in "${rooms[@]}"; do
     for season in "${seasons[@]}"; do

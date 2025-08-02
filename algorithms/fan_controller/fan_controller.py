@@ -76,3 +76,72 @@ class FanController:
                 return action_id
         print(f"⚠️ No matching action found for: [{cooling}, {heating}, {ac_speed}, {fan_speed}]")
         return 0  # fallback
+
+class HysteresisFanController:
+    def __init__(self, set_fan_speed=0.5):
+        self.ac_speed = 0.0
+        self.heating_setpoint = 5.0
+        self.cooling_setpoint = 50.0
+        self.set_window_fan_speed = set_fan_speed
+        self.window_fan_speed = 0.0
+    def select_action(self, state, is_summer, current_step, timesteps_per_hour):
+        co2 = state[0][10]
+        pmv = state[0][12]
+        occupancy = state[0][9]
+        
+        if occupancy == 0:
+            # No one is present, turn off HVAC and fan
+            return self.find_action_id(5.0, 50.0, 0.0, 0.0)
+
+        # Decide fan speed based on CO2
+        if co2 > 800:
+            self.window_fan_speed = self.set_window_fan_speed
+        elif co2 < 700:
+            self.window_fan_speed = 0.0
+        else:
+            # Do not change
+            pass
+
+        # Construct action
+        return self.find_action_id(self.heating_setpoint, self.cooling_setpoint, self.ac_speed, self.window_fan_speed)
+
+    def find_action_id(self, heating, cooling, ac_speed, fan_speed):
+        for action_id, values in all_action_map.items():
+            if (values[0] == heating and
+                values[1] == cooling and
+                values[2] == ac_speed and
+                values[3] == fan_speed):
+                return action_id
+        print(f"⚠️ No matching action found for: [{cooling}, {heating}, {ac_speed}, {fan_speed}]")
+        return 0  # fallback
+    
+class OnOffFanController:
+    def __init__(self, set_fan_speed=0.5):
+        self.ac_speed = 0.0
+        self.heating_setpoint = 5.0
+        self.cooling_setpoint = 50.0
+        self.set_window_fan_speed = set_fan_speed
+        self.window_fan_speed = 0.0
+    def select_action(self, state, is_summer, current_step, timesteps_per_hour):
+        co2 = state[0][10]
+        pmv = state[0][12]
+        occupancy = state[0][9]
+        
+        if occupancy == 0:
+            # No one is present, turn off HVAC and fan
+            return self.find_action_id(5.0, 50.0, 0.0, 0.0)
+        else:
+            self.window_fan_speed = self.set_window_fan_speed
+
+        # Construct action
+        return self.find_action_id(self.heating_setpoint, self.cooling_setpoint, self.ac_speed, self.window_fan_speed)
+
+    def find_action_id(self, heating, cooling, ac_speed, fan_speed):
+        for action_id, values in all_action_map.items():
+            if (values[0] == heating and
+                values[1] == cooling and
+                values[2] == ac_speed and
+                values[3] == fan_speed):
+                return action_id
+        print(f"⚠️ No matching action found for: [{cooling}, {heating}, {ac_speed}, {fan_speed}]")
+        return 0  # fallback
