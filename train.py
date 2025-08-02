@@ -87,6 +87,9 @@ def main():
                     'layer_sizes': {'value': [256,256,256]},
                     'env_id': {'value': ENV_ID},
                     'memory_capacity': {'value': 2*52600}, # [52600,2*52600,4*52600]
+                    'fine_tune': {'value': False},
+                    'model_path': {'value': None},
+                    
                 }
         }
         sweep_id = wandb.sweep(sweep_config, project=args.project, entity=args.entity)

@@ -140,7 +140,7 @@ def get_agent_observation_dict_based(agent_name: str, observation: List[float], 
     elif agent_name == "HVAC":
         keys = ['hour','outdoor_temperature','air_temperature', 'people_occupant', 'window_fan_speed','weekday', 'total_electricity_HVAC','pmv','ppd']
     elif agent_name == "CombinedAgent":
-        keys = ['hour', 'outdoor_temperature', 'outdoor_humidity', 'air_temperature', 'people_occupant', 
+        keys = ['hour', 'outdoor_temperature', 'outdoor_humidity', 'air_humidity','air_temperature', 'people_occupant', 
                 'window_fan_speed', 'total_electricity_HVAC','window_fan_energy','air_co2','weekday','pmv','ppd']
     else:
         raise ValueError(f"Unknown agent: {agent_name}")
@@ -430,8 +430,8 @@ def train(config=None):
             "memory_capacity": memory_capacity,
             "layer_sizes": layer_sizes,
         }
-        fan_agent = DQNAgent(12, 4,total_training_steps,num_episodes,training_config)
-        ac_agent = DQNAgent(12, 10,total_training_steps,num_episodes,training_config)
+        fan_agent = DQNAgent(13, 4,total_training_steps,num_episodes,training_config)
+        ac_agent = DQNAgent(13, 10,total_training_steps,num_episodes,training_config)
         best_ac_val_reward = -float('inf')
         best_fan_val_reward = -float('inf')
         best_ac_model_path = None
@@ -746,6 +746,11 @@ def train(config=None):
             print(f"Re-evaluating best models from: {best_ac_model_path} and {best_fan_model_path}")
             fan_agent.load_model(best_fan_model_path)
             ac_agent.load_model(best_ac_model_path)
+            ac_model_save_dir = f"{experiment_save_dir}/{ac_model_name}_best.pth"
+            fan_model_save_dir = f"{experiment_save_dir}/{fan_model_name}_best.pth"
+
+            fan_agent.save_model(fan_model_save_dir)
+            ac_agent.save_model(ac_model_save_dir)
             final_val_total_reward = 0
             final_val_ac_total_reward = 0
             final_val_fan_total_reward = 0
