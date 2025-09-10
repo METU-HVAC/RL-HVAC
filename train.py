@@ -13,7 +13,7 @@ from experiments.dqn import dqn_train
 from experiments.dqn import dqn_train_pmv 
 from experiments.madqn import ac_only_train
 from experiments.madqn import madqn_train_fully_competetive
-from experiments.madqn import madqn_train_fully_competetive
+from experiments.madqn import madqn_train_fully_cooperative
 from experiments.madqn import madqn_train_part_competetive
 from experiments.madqn import madqn_train_part_cooperative
 from experiments.dqn import dqn_train_pmv_fan_only
@@ -50,7 +50,7 @@ def main():
     print(f"Writing outputs to: {run_dir}")
     
     # Create experiment save dir
-    train_season = "hot"
+    train_season = "ankara"
     ENV_ID ="A403mediumfanger"
     NUM_EPISODES = 10          
     unique_experiment_name = f"{train_season}_{ENV_ID}_train_{timestamp}"
@@ -60,7 +60,7 @@ def main():
     if not os.path.exists(experiment_save_dir_name):
         os.makedirs(experiment_save_dir_name)
 
-    ENV_NAME = f"{ENV_ID}_{train_season}_MULTISPEED_FAN"
+    ENV_NAME = f"{ENV_ID}_{train_season}_SWITCH_PENALTY"
     ALGORITHM_NAME = args.algorithm.upper()
     
     name = create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
@@ -79,7 +79,7 @@ def main():
                     'co2_weight':{'values':[0.10,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90]},#{'values':[0.30,0.40,0.50]},#{'min':0.30,'max':0.60},# {'min':0.30,'max':0.60}, # 0.2 yapma 
                     #'temp_weight': {'min':0.20,'max':0.80}, #[0.40,0.50,0.60]
                     'pmv_weight': {'values':[0.10,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90]},#{'values':[0.40,0.50,0.60,0.70]},#{'values':[0.50,0.60,0.70]},# {'min':0.40,'max':0.70},
-                    'switching_penalty': {'value': 0},#{'values':[0.00,0.05,0.10]},
+                    'switching_penalty': {'value':0.00},#{'values':[0.00,0.05,0.10]},
                     'experiment_save_dir': {'value': experiment_save_dir_name},
                     'train_season': {'value': train_season},
                     'agent_count': {'value': 81},
@@ -117,7 +117,7 @@ def main():
     elif args.algorithm == "madqn_fully_competitive":
         train_func = madqn_train_fully_competetive.train
     elif args.algorithm == "madqn_fully_cooperative":
-        train_func = madqn_train_fully_competetive.train
+        train_func = madqn_train_fully_cooperative.train
     elif args.algorithm == "madqn_part_competitive":
         train_func = madqn_train_part_competetive.train
     elif args.algorithm == "madqn_part_cooperative":

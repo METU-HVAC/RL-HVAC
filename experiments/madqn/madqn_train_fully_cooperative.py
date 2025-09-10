@@ -376,20 +376,16 @@ def train(config=None):
 
         #Validation chunks is hot for now.
 
-        mixed_chunks = generate_chunks(start_date, days_per_chunk, total_days, step_size=days_per_chunk, seasons=["mixed"])
-        cool_chunks = generate_chunks(start_date, days_per_chunk, total_days,step_size=days_per_chunk,seasons=["cool"])
-        hot_chunks = generate_chunks(start_date, days_per_chunk, total_days,step_size=days_per_chunk,seasons=["hot"])
+        
+        chunks = generate_chunks(start_date, days_per_chunk, total_days,step_size=days_per_chunk,seasons=[config.train_season])
 
-        #train_chunks, val_chunks, test_chunks = split_chunks(chunks, train_ratio=0.1, val_ratio=0.1,seed=seed)
-        mixed_train_chunks, _, test_chunks = balanced_month_sample(mixed_chunks, val_chunks_per_month=1, seed=seed)
-        cool_train_chunks, _, _ = balanced_month_sample(cool_chunks, val_chunks_per_month=1, seed=seed)
-        hot_train_chunks, val_chunks, _ = balanced_month_sample(hot_chunks, val_chunks_per_month=1, seed=seed)
 
-        train_chunks = hot_train_chunks
+        train_chunks, val_chunks, _ = balanced_month_sample(chunks, val_chunks_per_month=1, seed=seed)
+
+
 
         num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
         total_number_of_training_chunks = len(train_chunks)
-        total_number_of_test_chunks = len(test_chunks)
 
         total_training_steps = total_number_of_training_chunks * num_episodes*steps_per_chunk
         current_training_step = 0
@@ -432,6 +428,11 @@ def train(config=None):
         }
         fan_agent = DQNAgent(13, 4,total_training_steps,num_episodes,training_config)
         ac_agent = DQNAgent(13, 10,total_training_steps,num_episodes,training_config)
+        if config.fine_tune:
+            print(f"Loading model from {config.model_path_ac}")
+            ac_agent.load_model(config.model_path_ac)
+            print(f"Loading model from {config.model_path_fan}")
+            fan_agent.load_model(config.model_path_fan)
         best_ac_val_reward = -float('inf')
         best_fan_val_reward = -float('inf')
         best_ac_model_path = None
@@ -890,8 +891,226 @@ def train(config=None):
                 "final_val_ppd_percentage_std": np.std(valid_ppds),
                 
             })
+def evaluate(config=None):
+    with wandb.init(config=config):
+        config = wandb.config
+        os.makedirs(config.experiment_save_dir, exist_ok=True)
+        seed = 42  # Set seed for reproducibility
+        # Set seeds for reproducibility
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
 
+        remove_previous_run_logs()
+
+        train_interval = 96*2 # Train every n steps. Which is 96 steps for 15 minute intervals, which is 24 hours.
+        timesteps_per_hour = 4  # 15-minute intervals
+        days_per_chunk = 8
+        timestep_per_day = timesteps_per_hour * 24
+        steps_per_chunk = timestep_per_day * days_per_chunk
+        start_date = datetime(1997, 1, 1)
+        total_days = 365
+
+
+        # Generate and split chunks
+
+        #Validation chunks is hot for now.
+
+        
+        chunks = generate_chunks(start_date, days_per_chunk, total_days,step_size=days_per_chunk,seasons=[config.train_season])
+
+
+        train_chunks, val_chunks, _ = balanced_month_sample(chunks, val_chunks_per_month=1, seed=seed)
+
+
+
+        num_episodes = config.num_episodes  # Total number of episodes (full sweeps through the dataset)  
+        total_number_of_training_chunks = len(train_chunks)
+
+        total_training_steps = total_number_of_training_chunks * num_episodes*steps_per_chunk
+        current_training_step = 0
+        
+        co2_weight = config.co2_weight
+        pmv_weight = config.pmv_weight
+        switching_penalty = config.switching_penalty
+        fan_energy_weight = 1 - co2_weight
+        ac_energy_weight = 1 - pmv_weight
+        lambda_energy = config.lambda_energy
+        learning_rate = config.learning_rate
+        gamma = config.gamma
+        experiment_save_dir = config.experiment_save_dir
+        env_id = config.env_id
+        layer_sizes = config.layer_sizes
+        memory_capacity = config.memory_capacity
+        reward_config = {
+            'pmv_variables': ['pmv'],
+            'co2_variable': 'air_co2',
+            'energy_variables': ['total_electricity_HVAC', 'window_fan_energy'],
+            'ac_energy_weight': ac_energy_weight,
+            'fan_energy_weight': fan_energy_weight,
+            'co2_weight': co2_weight,
+            'pmv_weight': pmv_weight,
+            'lambda_energy': lambda_energy, # 1/100.000
+            'lambda_pmv': 1.0,
+            'lambda_co2': 1.0,
+            'co2_threshold': 800,
+        }
+        training_config = {
+            "batch_size": 64,
+            "gamma": gamma,
+            "eps_start": 0.9,
+            "eps_end": 0.01,
+            "eps_decay": 5,
+            "tau": 0.005,
+            "lr":learning_rate,
+            "memory_capacity": memory_capacity,
+            "layer_sizes": layer_sizes,
+        }
+        fan_agent = DQNAgent(13, 4,total_training_steps,num_episodes,training_config)
+        ac_agent = DQNAgent(13, 10,total_training_steps,num_episodes,training_config)
+        print(f"Evaluating model from {config.model_path_ac}")
+        ac_agent.load_model(config.model_path_ac)
+        print(f"Evaluating model from {config.model_path_fan}")
+        fan_agent.load_model(config.model_path_fan)
+        final_val_total_reward = 0
+        final_val_ac_total_reward = 0
+        final_val_fan_total_reward = 0
+        final_val_power_list = []
+        final_val_co2_viol_list = []
+        final_val_pmv_viol_list = []
+        final_pmv_deviations = []
+        final_co2_deviations = []
+        final_obs_dict = {}
+        with tqdm(total=len(val_chunks), 
+                    desc=f"Episode {num_episodes + 1} (Final Validation)", 
+                    ncols=120, 
+                    unit="chunk", 
+                    leave=True) as pbar:
             
+            for i, val_chunk in enumerate(val_chunks):
+                obs_dict = {} 
+                rewards, _, obs_dict = run_simulation(env_id, *val_chunk,
+                                                "Validation", 
+                                                steps_per_chunk,
+                                                fan_agent,
+                                                ac_agent,
+                                                train_interval,
+                                                timesteps_per_hour,
+                                                reward_config,
+                                                switching_penalty)
+                final_obs_dict = update_combined_dict(obs_dict, final_obs_dict)
+                append_observations(final_obs_dict, final_log_dict)
+
+                window_power = sum(obs_dict['window_fan_energies'])
+                hvac_power = sum(obs_dict['total_electricity_HVACs'])
+                total_power = window_power + hvac_power
+                joules_to_kwh = 1 / 3600000
+
+                pmv_violations = [v for v in obs_dict['pmv_violations'] if v is not None]
+                co2_violations = [v for v in obs_dict['co2_violations'] if v is not None]
+                pmv_devs = [v for v in obs_dict['pmv_deviations'] if v is not None]
+                co2_devs = [v for v in obs_dict['co2_deviations'] if v is not None]
+                
+                final_pmv_deviations.extend(pmv_devs)
+                final_co2_deviations.extend(co2_devs)
+
+                pmv_viol_percentage = sum(pmv_violations) / len(pmv_violations) * 100 if pmv_violations else 0
+                co2_viol_percentage = sum(co2_violations) / len(co2_violations) * 100 if co2_violations else 0
+
+                final_val_ac_total_reward += rewards["HVAC"]
+                final_val_fan_total_reward += rewards["WindowFan"]
+                final_val_total_reward += (rewards["HVAC"] + rewards["WindowFan"])
+                final_val_power_list.append(total_power * joules_to_kwh)
+                final_val_pmv_viol_list.append(pmv_viol_percentage)
+                final_val_co2_viol_list.append(co2_viol_percentage)
+                
+                
+                ac_model_name = "madqn_co2_{:.0f}_pmv_{:.0f}_lr_{:.0e}".format(co2_weight*1000, pmv_weight*1000,learning_rate)
+                save_observations_to_csv(final_log_dict, ac_model_name,directory=experiment_save_dir,epoch="final")
+                
+                pbar.set_postfix({
+                    "Pwr": f"{np.mean(final_val_power_list):.1f}",
+                    "CO2": f"{np.mean(final_val_co2_viol_list):.1f}",
+                    "PMV": f"{np.mean(final_val_pmv_viol_list):.1f}"
+                })
+                pbar.update(1)
+        start_step = (num_episodes + 1) * len(final_obs_dict["time_labels"])
+
+        inside_temp_levels = final_obs_dict["air_temperatures"]
+        outside_temp_levels = final_obs_dict["outdoor_temperatures"]
+        co2_levels = final_obs_dict["air_co2s"]
+        window_fan_speeds = final_obs_dict["window_fan_speeds"]
+        ac_fan_speeds = final_obs_dict["ac_fan_speeds"]
+        raw_actions = final_obs_dict["raw_actions"]
+        raw_pmv_deviations = final_obs_dict["pmv_deviations"]
+        raw_co2_deviations = final_obs_dict["co2_deviations"]
+        occupants = np.array(final_obs_dict["people_occupants"])
+        pmvs = np.array(final_obs_dict['pmvs'])
+        ppds = np.array(final_obs_dict['ppds'])
+        
+        raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
+        raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
+        valid_pmvs = raw_pmv_values[raw_pmv_values != 0.0]
+        pmv_deviations_from_raw = np.abs(valid_pmvs[np.abs(valid_pmvs) > 0.5]) - 0.5
+        pmv_violation_flags = (np.abs(valid_pmvs) > 0.5).astype(int)
+        
+        pmv_violation_mean = pmv_violation_flags.mean() * 100 
+        pmv_violation_std = pmv_violation_flags.std(ddof=0) * 100
+        
+        pmv_deviations = [v for v in final_obs_dict['pmv_deviations'] if v is not None]
+        co2_deviations = [v for v in final_obs_dict['co2_deviations'] if v is not None]
+        final_val_pmv_deviation_mean = np.mean(pmv_deviations) if pmv_deviations else None
+        final_val_pmv_deviation_std = np.std(pmv_deviations) if pmv_deviations else None
+        raw_pmv_values = np.where(occupants > 0, pmvs, 0.0)
+        raw_ppd_values = np.where(occupants > 0, ppds, 5.0)
+
+        valid_pmvs = raw_pmv_values[raw_pmv_values != 0.0]
+        pmv_deviations_from_raw = np.abs(valid_pmvs[np.abs(valid_pmvs) > 0.5]) - 0.5
+        pmv_violation_flags = (np.abs(valid_pmvs) > 0.5).astype(int)
+        
+        pmv_violation_mean = pmv_violation_flags.mean() * 100 
+        pmv_violation_std = pmv_violation_flags.std(ddof=0) * 100
+        
+        valid_ppds = raw_ppd_values[raw_ppd_values != 5.0]
+        
+        # Log final timestep-level data
+        for t in range(len(inside_temp_levels)):
+            wandb.log({
+                "final_val_inside_temperature_timestep": inside_temp_levels[t],
+                "final_val_outside_temperature_timestep": outside_temp_levels[t],
+                "final_val_co2_level_timestep": co2_levels[t],
+                "final_val_window_fan_speed_timestep": window_fan_speeds[t],
+                "final_val_ac_fan_speed_timestep": ac_fan_speeds[t],
+                "final_val_raw_actions": raw_actions[t],
+                "final_val_pmv_timestep": raw_pmv_values[t],
+                "final_val_ppd_timestep": raw_ppd_values[t],
+                "final_val_co2_deviation_timestep": raw_co2_deviations[t] if raw_co2_deviations[t] is not None else 0,
+                "final_val_pmv_deviation_timestep": raw_pmv_deviations[t] if raw_pmv_deviations[t] is not None else 0,
+            }, step=start_step + t)
+        wandb.log({
+            "final_val_ac_reward": (final_val_ac_total_reward / len(val_chunks)),
+            "final_val_fan_reward": (final_val_fan_total_reward / len(val_chunks)),
+            "final_val_reward": (final_val_total_reward / len(val_chunks)),
+
+            "final_val_power_kWh_mean": np.mean(final_val_power_list),
+            "final_val_power_kWh_std": np.std(final_val_power_list),
+
+            "final_val_pmv_violation_%_mean": pmv_violation_mean,
+            "final_val_pmv_violation_%_std": pmv_violation_std,
+
+            "final_val_co2_violation_%_mean": np.mean(final_val_co2_viol_list),
+            "final_val_co2_violation_%_std": np.std(final_val_co2_viol_list),
+
+            "final_val_pmv_deviation_mean": final_val_pmv_deviation_mean,
+            "final_val_pmv_deviation_std": final_val_pmv_deviation_std,
+
+            "final_val_co2_deviation_mean": np.mean(final_co2_deviations),
+            "final_val_co2_deviation_std": np.std(final_co2_deviations),
+            
+            "final_val_ppd_percentage_mean": np.mean(valid_ppds),
+            "final_val_ppd_percentage_std": np.std(valid_ppds),
+            
+        })            
 # # Create experiment save dir
 # train_season = "hot"
 # current_date = datetime.now().strftime("%Y-%m-%d_%H:%M")

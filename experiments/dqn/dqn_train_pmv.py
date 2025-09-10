@@ -272,8 +272,12 @@ def train(config=None):
         
         agent = DQNAgent(state_size, action_size,total_training_steps,num_episodes,training_config)
         if config.fine_tune:
-            print(f"Loading model from {config.model_path}")
-            agent.load_model(config.model_path)
+            if (config.train_season == "hot" and config.env_id == "A403smallfanger") or (config.train_season == "hot" and config.env_id == "A403largefanger") or (config.train_season == "cool" and config.env_id == "A403mediumfanger") or (config.train_season == "mixed" and config.env_id == "A403mediumfanger"):
+                print(f"Loading model from {config.model_path_ac}")
+                agent.load_model(config.model_path_ac)
+            else:
+                print("skipping loading model, as the environment and season is not necessary for fine-tuning")
+                return
         best_val_reward = -float('inf')
         best_model_path = None
         for episode in range(1, num_episodes + 1):
@@ -687,7 +691,7 @@ def evaluate(config=None):
         experiment_save_dir = config.experiment_save_dir
         env_id = config.env_id
         layer_sizes = config.layer_sizes
-        model_path = config.model_path
+        model_path = config.model_path_ac
 
         reward_config = {
             'pmv_variables': ['pmv'],

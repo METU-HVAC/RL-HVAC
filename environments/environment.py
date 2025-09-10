@@ -60,14 +60,17 @@ def create_environment(env_id,start_date, end_date,season, reward_fn,episode_typ
         season_env_mapping = {
             'hot': f'Eplus-{env_id}-hot-discrete-v1',
             'cool': f'Eplus-{env_id}-cool-discrete-v1',
-            'mixed': f'Eplus-{env_id}-mixed-discrete-v1'
+            'mixed': f'Eplus-{env_id}-mixed-discrete-v1',
+            'ankara': f'Eplus-{env_id}-ankara-discrete-v1'
         }
     else:
         
         season_env_mapping = {
             'hot': f'Eplus-{env_id}-hot-discrete-v1',
             'cool': f'Eplus-{env_id}-cool-discrete-v1',
-            'mixed': f'Eplus-{env_id}-mixed-discrete-v1'
+            'mixed': f'Eplus-{env_id}-mixed-discrete-v1',
+            'ankara': f'Eplus-{env_id}-ankara-discrete-v1'
+
         }
     
 

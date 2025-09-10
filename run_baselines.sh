@@ -48,8 +48,8 @@ PYTHON=python3
 SCRIPT=/app/RL-HVAC/experiments/baselines/baseline_test_pmv.py
 
 # Define test configuration
-rooms=("A403mediumfanger")
-seasons=("cool" "mixed")
+rooms=("A403smallfanger" "A403largefanger")
+seasons=("hot")
 # algorithms=("setpoint05" "setpoint075" "setpoint1"
 #             "on_off05" "on_off075" "on_off1"
 #             "window_on_off" "window_schedule"

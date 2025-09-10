@@ -12,6 +12,7 @@ from experiments.madqn import ac_only_train
 from experiments.madqn import madqn_train_fully_competetive
 from experiments.madqn import madqn_train_part_competetive
 from experiments.madqn import madqn_train_part_cooperative
+from experiments.madqn import madqn_train_fully_cooperative
 from experiments.dqn import dqn_train_pmv_fan_only, dqn_train_pmv_ac_only
 from experiments.sac import sac_train_pmv
 from experiments.sac import masac_train_fully_competetive, masac_train_fully_cooperative
@@ -32,6 +33,8 @@ def parse_args():
         "sac", "masac_fully_competetive", "masac_fully_cooperative"
     ])
     p.add_argument("--model-path", required=True, help="Path to pre-trained model (.pth)")
+    p.add_argument("--model-path-fan", default=os.environ.get("MODEL_PATH_FAN", None),
+                   help="Optional path to pre-trained Fan model (.pth) for multi-agent fine-tuning")
     p.add_argument("--env-id", required=True, help="Environment ID, e.g., A403small")
     p.add_argument("--weather", required=True, choices=["hot", "cool", "mixed"])
     # Model hyperparameters for logging
@@ -73,21 +76,22 @@ def main():
             "name": fine_tune_experiment_name,
             "metric": {"name": "final_val_power_kWh_mean", "goal": "minimize"},
             "parameters": {
-                    'learning_rate':{'value': 3e-3}, #{'values': [3e-4,1e-3,3e-3]},
+                    'learning_rate':{'value': 3e-4}, #{'values': [3e-4,1e-3,3e-3]},
                     'lambda_energy': {'value': 1/1_600_000}, # [1/2_000_000,1/1_600_000,1/1_200_000]
                     'gamma': {'value':0.95}, # [0.90,0.95,0.99]
-                    'co2_weight':{'value': 0.3},#{'values':[0.30,0.40,0.50]},#{'min':0.30,'max':0.60},# {'min':0.30,'max':0.60}, # 0.2 yapma 
+                    'co2_weight':{'value': 0.2},#{'values':[0.30,0.40,0.50]},#{'min':0.30,'max':0.60},# {'min':0.30,'max':0.60}, # 0.2 yapma 
                     #'temp_weight': {'min':0.20,'max':0.80}, #[0.40,0.50,0.60]
-                    'pmv_weight': {'value': 0.4},#{'values':[0.40,0.50,0.60,0.70]},#{'values':[0.50,0.60,0.70]},# {'min':0.40,'max':0.70},
+                    'pmv_weight': {'value': 0.2},#{'values':[0.40,0.50,0.60,0.70]},#{'values':[0.50,0.60,0.70]},# {'min':0.40,'max':0.70},
                     'switching_penalty': {'value': 0},#{'values':[0.00,0.05,0.10]},
                     'experiment_save_dir': {'value': experiment_save_dir_name},
-                    'model_path': {'value': args.model_path},
+                    'model_path_ac': {'value': args.model_path},
+                    'model_path_fan': {'value': args.model_path_fan},  # Optional for multi-agent
                     'train_season': {'value': args.weather},
                     'agent_count': {'value': 81},
                     'layer_sizes': {'value': [256,256,256]},
                     'env_id': {'value': args.env_id},
                     'memory_capacity': {'value': 2*52600}, # [52600,2*52600,4*52600]
-                    'num_episodes': {'value': 3},  # FineTune typically runs for 3 episodes
+                    'num_episodes': {'value': 4},  # FineTune typically runs for 3 episodes
                     'fine_tune': {'value': True},  # Flag to indicate fine-tuning
                 }
         }
@@ -95,11 +99,18 @@ def main():
     
 
     # === Map algorithm to evaluation function ===
-
     if args.algorithm == "dqn_pmv":
         eval_func = dqn_train_pmv.train
+    elif args.algorithm == "madqn_part_competitive":
+        eval_func = madqn_train_part_competetive.train
+    elif args.algorithm == "madqn_fully_cooperative":
+        eval_func = madqn_train_fully_cooperative.train
+    elif args.algorithm == "madqn_part_cooperative":
+        eval_func = madqn_train_part_cooperative.train
+    elif args.algorithm == "madqn_fully_competitive":
+        eval_func = madqn_train_fully_competetive.train
     else:
-        raise ValueError(f"Unsupported algorithm for evaluation: {args.algorithm}")
+        raise ValueError(f"Unsupported algorithm for finetune: {args.algorithm}")
 
     wandb.agent(
         sweep_id,
