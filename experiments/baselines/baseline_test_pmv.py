@@ -60,7 +60,7 @@ def run_simulation(env_id,start_date, end_date, season,episode_type, steps_per_c
     prev_month = None
     prev_day = None
     while current_step < steps_per_chunk:
-        is_summer= is_summer_by_month(int(state[0][0]),SUMMER_START,SUMMER_END)  # Assuming month is the first element in the statesummer_start=SUMMER_START,summer_end=SUMMER_END)
+        is_summer= is_summer_by_month(int( state[0][0]),SUMMER_START,SUMMER_END)  # Assuming month is the first element in the statesummer_start=SUMMER_START,summer_end=SUMMER_END)
         action = agent.select_action(state,is_summer,current_step-1,timesteps_per_hour)
         
         #np_action = np.array([action], dtype=np.float32)  # Adjust dtype to match environment

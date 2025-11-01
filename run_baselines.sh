@@ -48,16 +48,23 @@ PYTHON=python3
 SCRIPT=/app/RL-HVAC/experiments/baselines/baseline_test_pmv.py
 
 # Define test configuration
-rooms=("A403smallfanger" "A403largefanger")
-seasons=("hot")
+# rooms=("A403smallfanger" "A403largefanger")
+# seasons=("hot")
+rooms=("A403mediumfanger")
+seasons=("ankara")
 # algorithms=("setpoint05" "setpoint075" "setpoint1"
 #             "on_off05" "on_off075" "on_off1"
 #             "window_on_off" "window_schedule"
 #             "multispeed_setpoint")
 #algorithms=("adaptive_pmv_only_ac" "fan_controller" "adaptive_rbc")
-#algorithms=("adaptive_pmv_only_ac")        
+algorithms=("adaptive_pmv_only_ac")        
 
-algorithms=("adaptive_rbc")
+# algorithms=("on_off_fan_controller0.5" "on_off_fan_controller0.75" "on_off_fan_controller1"
+#             "fan_controller_hysteresis05" "fan_controller_hysteresis75" "fan_controller_hysteresis1"
+#             "fan_controller_multi_speed"
+#             "adaptive_pmv_only_ac"
+#             "adaptive_rbc"
+#             )
 # Loop through all combinations
 for room in "${rooms[@]}"; do
     for season in "${seasons[@]}"; do

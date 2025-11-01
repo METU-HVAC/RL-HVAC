@@ -60,7 +60,7 @@ def main():
     if not os.path.exists(experiment_save_dir_name):
         os.makedirs(experiment_save_dir_name)
 
-    ENV_NAME = f"{ENV_ID}_{train_season}_SWITCH_PENALTY"
+    ENV_NAME = f"{ENV_ID}_{train_season}"
     ALGORITHM_NAME = args.algorithm.upper()
     
     name = create_experiment_name(env_name=ENV_NAME, episodes=NUM_EPISODES,algorithm_name=ALGORITHM_NAME)
@@ -73,7 +73,7 @@ def main():
             "name": name,
             "metric": {"name": "final_val_power_kWh_mean", "goal": "minimize"},
             "parameters": {
-                    'learning_rate':{'value': 3e-3}, #{'values': [3e-4,1e-3,3e-3]},
+                    'learning_rate':{'value': 3e-3},
                     'lambda_energy': {'value': 1/1_600_000}, # [1/2_000_000,1/1_600_000,1/1_200_000]
                     'gamma': {'value':0.95}, # [0.90,0.95,0.99]
                     'co2_weight':{'values':[0.10,0.20,0.30,0.40,0.50,0.60,0.70,0.80,0.90]},#{'values':[0.30,0.40,0.50]},#{'min':0.30,'max':0.60},# {'min':0.30,'max':0.60}, # 0.2 yapma 
