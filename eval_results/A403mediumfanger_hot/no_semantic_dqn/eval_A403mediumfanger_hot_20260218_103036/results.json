@@ -1,0 +1,16 @@
+{
+  "model_path": "./standalone_results/A403mediumfanger_hot/no_semantic_dqn/A403mediumfanger_hot_raw_20260218_091320/dqn_best.pth",
+  "season": "hot",
+  "env_id": "A403mediumfanger",
+  "avg_reward": 73.27485464942728,
+  "std_reward": 40.51475694489487,
+  "avg_power_kwh": 87.9310531616211,
+  "pmv_violation_pct": 9.405831730901772,
+  "co2_violation_pct": 0.20606717059980337,
+  "semantic": {
+    "use_semantic": false,
+    "semantic_mode": null,
+    "semantic_model_path": null,
+    "semantic_stats_path": null
+  }
+}

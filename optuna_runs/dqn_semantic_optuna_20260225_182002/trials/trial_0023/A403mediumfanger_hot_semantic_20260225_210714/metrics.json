@@ -1,0 +1,29 @@
+[
+  {
+    "episode": 1,
+    "train_reward": -534.6031932496389,
+    "val_reward": -197.32534605403453,
+    "train_loss": 0.2374524913652979,
+    "val_power_kwh": 2.844437599182129,
+    "val_pmv_violation_pct": 72.2157105491688,
+    "val_co2_violation_pct": 0.07374631268436578
+  },
+  {
+    "episode": 2,
+    "train_reward": -270.3333076347745,
+    "val_reward": -390.4474364894134,
+    "train_loss": 0.28845879247393275,
+    "val_power_kwh": 48.119022369384766,
+    "val_pmv_violation_pct": 41.155446486826754,
+    "val_co2_violation_pct": 19.619823471199883
+  },
+  {
+    "episode": 3,
+    "train_reward": -297.0879130528169,
+    "val_reward": -428.59826478456307,
+    "train_loss": 0.31501420903386496,
+    "val_power_kwh": 49.48625564575195,
+    "val_pmv_violation_pct": 35.87852341100819,
+    "val_co2_violation_pct": 23.217704111873843
+  }
+]

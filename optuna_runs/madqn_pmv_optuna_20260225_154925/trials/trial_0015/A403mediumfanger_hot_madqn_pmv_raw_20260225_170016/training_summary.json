@@ -1,0 +1,15 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 3,
+  "best_validation_total_reward": -86.78985543601932,
+  "best_fan_model_path": "./optuna_runs/madqn_pmv_optuna_20260225_154925/trials/trial_0015/A403mediumfanger_hot_madqn_pmv_raw_20260225_170016/madqn_pmv_fan_best.pth",
+  "best_hvac_model_path": "./optuna_runs/madqn_pmv_optuna_20260225_154925/trials/trial_0015/A403mediumfanger_hot_madqn_pmv_raw_20260225_170016/madqn_pmv_hvac_best.pth",
+  "output_dir": "./optuna_runs/madqn_pmv_optuna_20260225_154925/trials/trial_0015/A403mediumfanger_hot_madqn_pmv_raw_20260225_170016",
+  "semantic": {
+    "use_semantic": false,
+    "semantic_mode": null,
+    "semantic_model_path": null,
+    "semantic_stats_path": null
+  }
+}

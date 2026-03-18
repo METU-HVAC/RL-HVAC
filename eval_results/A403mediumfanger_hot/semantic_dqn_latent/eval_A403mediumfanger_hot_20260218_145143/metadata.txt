@@ -1,0 +1,2 @@
+50 epoch graph tranining
+50 episode RL tranining

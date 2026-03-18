@@ -1,0 +1,47 @@
+[
+  {
+    "episode": 1,
+    "train_reward": -596.5456408538628,
+    "val_reward": -685.0166587593503,
+    "train_loss": 0.1724784971036092,
+    "train_reward_fan": -136.4115586544274,
+    "train_reward_hvac": -460.13408219943534,
+    "val_reward_fan": -483.1268805365932,
+    "val_reward_hvac": -201.88977822275714,
+    "train_loss_fan": 0.11656983181683706,
+    "train_loss_hvac": 0.22838716239038137,
+    "val_power_kwh": 76.03498077392578,
+    "val_pmv_violation_pct": 20.3170714529402,
+    "val_co2_violation_pct": 41.69629765080088
+  },
+  {
+    "episode": 2,
+    "train_reward": -354.76028774037684,
+    "val_reward": -181.60942615040435,
+    "train_loss": 0.24561299419388022,
+    "train_reward_fan": -173.56439644731864,
+    "train_reward_hvac": -181.19589129305822,
+    "val_reward_fan": 20.129570564371534,
+    "val_reward_hvac": -201.73899671477588,
+    "train_loss_fan": 0.22521264741968627,
+    "train_loss_hvac": 0.26601334096807416,
+    "val_power_kwh": 82.64856719970703,
+    "val_pmv_violation_pct": 20.360826019008627,
+    "val_co2_violation_pct": 0.03790698315551512
+  },
+  {
+    "episode": 3,
+    "train_reward": -176.9358031376781,
+    "val_reward": -472.0486212508931,
+    "train_loss": 0.20926026137301115,
+    "train_reward_fan": -39.21806555166558,
+    "train_reward_hvac": -137.71773758601253,
+    "val_reward_fan": -294.5297401737577,
+    "val_reward_hvac": -177.51888107713543,
+    "train_loss_fan": 0.21006459353322335,
+    "train_loss_hvac": 0.20845592921279896,
+    "val_power_kwh": 73.97994995117188,
+    "val_pmv_violation_pct": 19.193915541518482,
+    "val_co2_violation_pct": 27.703835827727698
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "study_name": "dqn_semantic_optuna",
+  "created_at": "2026-02-25T21:58:04.921860",
+  "best_value": -60.83472924014365,
+  "best_params": {
+    "learning_rate": 0.0017761081499308054,
+    "gamma": 0.9018476183794321,
+    "co2_weight": 0.797365340330809,
+    "tau": 0.016975953628649697,
+    "eps_decay": 3,
+    "pmv_weight": 0.655718921227677
+  }
+}

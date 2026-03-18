@@ -1,0 +1,80 @@
+building_uri: "bld:Building_1"
+room_uri: "bld:Room_A403"
+
+time:
+  month: month
+  day_of_month: day_of_month
+  hour: hour
+  minute: minute
+
+sensors:
+  outdoor_temperature:
+    sensor_uri: "bld:OutdoorTemperatureSensor_1"
+    property_uri: "bld:OutdoorAirTemperature"
+    saref_property_class: "saref:Temperature"
+    unit: "degC"
+
+  outdoor_humidity:
+    sensor_uri: "bld:OutdoorHumiditySensor_1"
+    property_uri: "bld:OutdoorAirHumidity"
+    saref_property_class: "saref:Humidity"
+    unit: "%"
+
+  air_temperature:
+    sensor_uri: "bld:RoomA403AirTemperatureSensor_1"
+    property_uri: "bld:RoomA403AirTemperature"
+    saref_property_class: "saref:Temperature"
+    unit: "degC"
+
+  air_humidity:
+    sensor_uri: "bld:RoomA403AirHumiditySensor_1"
+    property_uri: "bld:RoomA403AirHumidity"
+    saref_property_class: "saref:Humidity"
+    unit: "%"
+
+  air_co2:
+    sensor_uri: "bld:RoomA403CO2Sensor_1"
+    property_uri: "bld:RoomA403AirCO2"
+    saref_property_class: "saref:CO2Concentration"
+    unit: "ppm"
+
+  people_occupant:
+    sensor_uri: "bld:RoomA403OccupancySensor_1"
+    property_uri: "bld:RoomA403Occupancy"
+    saref_property_class: "saref:Occupancy"
+    unit: "people"
+
+energy_meters:
+  window_fan_energy:
+    device_uri: "bld:WindowFan_A403_1"
+    property_uri: "bld:WindowFan_A403_Energy"
+    saref_property_class: "saref:Energy"
+    unit: "kWh"
+
+  total_electricity_HVAC:
+    device_uri: "bld:HVACElectricMeter_1"
+    property_uri: "bld:TotalHVACElectricity"
+    saref_property_class: "saref:Energy"
+    unit: "kWh"
+
+setpoints:
+  heating_setpoint:
+    property_uri: "bld:RoomA403HeatingSetpoint"
+    saref_property_class: "saref:Temperature"
+    unit: "degC"
+
+  cooling_setpoint:
+    property_uri: "bld:RoomA403CoolingSetpoint"
+    saref_property_class: "saref:Temperature"
+    unit: "degC"
+
+actuators:
+  ac_fan_speed:
+    actuator_uri: "bld:ACFan_A403_1"
+    command_property: "bld:ACFan_A403_Speed"
+    unit: "%"
+
+  window_fan_speed:
+    actuator_uri: "bld:WindowFan_A403_1"
+    command_property: "bld:WindowFan_A403_Speed"
+    unit: "%"

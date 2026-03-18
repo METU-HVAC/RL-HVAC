@@ -1,0 +1,14 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 3,
+  "best_validation_reward": -107.4714033502775,
+  "output_dir": "./optuna_runs/dqn_optuna_20260225_133257/trials/trial_0026/A403mediumfanger_hot_raw_20260225_152742",
+  "best_model_path": "./optuna_runs/dqn_optuna_20260225_133257/trials/trial_0026/A403mediumfanger_hot_raw_20260225_152742/dqn_best.pth",
+  "semantic": {
+    "use_semantic": false,
+    "semantic_mode": null,
+    "semantic_model_path": null,
+    "semantic_stats_path": null
+  }
+}

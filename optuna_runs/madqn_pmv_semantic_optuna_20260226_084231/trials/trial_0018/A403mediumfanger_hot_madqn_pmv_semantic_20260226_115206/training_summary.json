@@ -1,0 +1,15 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 3,
+  "best_validation_total_reward": -181.60942615040435,
+  "best_fan_model_path": "./optuna_runs/madqn_pmv_semantic_optuna_20260226_084231/trials/trial_0018/A403mediumfanger_hot_madqn_pmv_semantic_20260226_115206/madqn_pmv_fan_best.pth",
+  "best_hvac_model_path": "./optuna_runs/madqn_pmv_semantic_optuna_20260226_084231/trials/trial_0018/A403mediumfanger_hot_madqn_pmv_semantic_20260226_115206/madqn_pmv_hvac_best.pth",
+  "output_dir": "./optuna_runs/madqn_pmv_semantic_optuna_20260226_084231/trials/trial_0018/A403mediumfanger_hot_madqn_pmv_semantic_20260226_115206",
+  "semantic": {
+    "use_semantic": true,
+    "semantic_mode": "latent",
+    "semantic_model_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim32/A403mediumfanger_hot/graph_encoder.pt",
+    "semantic_stats_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim32/A403mediumfanger_hot/target_stats.json"
+  }
+}

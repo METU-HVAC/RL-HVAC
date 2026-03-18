@@ -1,0 +1,16 @@
+{
+  "model_path": "./standalone_results/dqn_A403mediumfanger_hot_ep20_semantic-latent_z16_epoch20_dim16-A403mediumfanger_hot_optuna_best_20260311_173810/dqn_best.pth",
+  "season": "hot",
+  "env_id": "A403mediumfanger",
+  "avg_reward": -175.4850584678671,
+  "std_reward": 190.47732111508034,
+  "avg_power_kwh": 88.1756591796875,
+  "pmv_violation_pct": 17.794794279951113,
+  "co2_violation_pct": 0.9168320789568,
+  "semantic": {
+    "use_semantic": true,
+    "semantic_mode": "latent",
+    "semantic_model_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim16/A403mediumfanger_hot/graph_encoder.pt",
+    "semantic_stats_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim16/A403mediumfanger_hot/target_stats.json"
+  }
+}

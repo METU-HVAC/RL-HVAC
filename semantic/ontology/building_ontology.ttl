@@ -1,0 +1,114 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix saref:  <https://saref.etsi.org/core/> .
+@prefix s4bldg: <https://saref.etsi.org/s4bldg/> .
+@prefix bld:  <http://example.org/building#> .
+
+############################
+# Building & Room
+############################
+
+bld:Building_1 a s4bldg:Building ;
+    rdfs:label "Demo building"@en .
+
+bld:Room_A403 a s4bldg:BuildingSpace ;
+    rdfs:label "Room A403"@en ;
+    s4bldg:isSpaceOf bld:Building_1 ;
+    bld:minComfortTemp "21.0"^^xsd:float ;
+    bld:maxComfortTemp "24.0"^^xsd:float ;
+    bld:maxCO2          "1000.0"^^xsd:float ;
+    bld:occupancyCapacity "4"^^xsd:int .
+
+############################
+# Sensors (A403 + outdoor)
+############################
+
+bld:OutdoorTemperatureSensor_1 a saref:Sensor ;
+    rdfs:label "Outdoor temperature sensor"@en ;
+    saref:measuresProperty bld:OutdoorAirTemperature .
+
+bld:OutdoorHumiditySensor_1 a saref:Sensor ;
+    rdfs:label "Outdoor humidity sensor"@en ;
+    saref:measuresProperty bld:OutdoorAirHumidity .
+
+bld:RoomA403AirTemperatureSensor_1 a saref:Sensor ;
+    rdfs:label "Room A403 air temperature sensor"@en ;
+    saref:measuresProperty bld:RoomA403AirTemperature ;
+    saref:hasLocation bld:Room_A403 .
+
+bld:RoomA403AirHumiditySensor_1 a saref:Sensor ;
+    rdfs:label "Room A403 air humidity sensor"@en ;
+    saref:measuresProperty bld:RoomA403AirHumidity ;
+    saref:hasLocation bld:Room_A403 .
+
+bld:RoomA403CO2Sensor_1 a saref:Sensor ;
+    rdfs:label "Room A403 CO2 sensor"@en ;
+    saref:measuresProperty bld:RoomA403AirCO2 ;
+    saref:hasLocation bld:Room_A403 .
+
+bld:RoomA403OccupancySensor_1 a saref:Sensor ;
+    rdfs:label "Room A403 occupancy sensor"@en ;
+    saref:measuresProperty bld:RoomA403Occupancy ;
+    saref:hasLocation bld:Room_A403 .
+
+############################
+# Devices / Actuators
+############################
+
+bld:ACUnit_A403_1 a saref:Device ;
+    rdfs:label "AC unit in A403"@en .
+
+bld:ACFan_A403_1 a saref:Actuator ;
+    rdfs:label "AC fan actuator in A403"@en ;
+    saref:controlsProperty bld:ACFan_A403_Speed ;
+    saref:hasLocation bld:Room_A403 .
+
+bld:WindowFan_A403_1 a saref:Actuator ;
+    rdfs:label "Window fan actuator in A403"@en ;
+    saref:controlsProperty bld:WindowFan_A403_Speed ;
+    saref:hasLocation bld:Room_A403 .
+
+bld:HVACElectricMeter_1 a saref:Device ;
+    rdfs:label "HVAC total electricity meter"@en ;
+    saref:measuresProperty bld:TotalHVACElectricity .
+
+############################
+# Properties
+############################
+
+bld:OutdoorAirTemperature a saref:Temperature ;
+    rdfs:label "Outdoor air temperature"@en .
+
+bld:OutdoorAirHumidity a saref:Humidity ;
+    rdfs:label "Outdoor air relative humidity"@en .
+
+bld:RoomA403AirTemperature a saref:Temperature ;
+    rdfs:label "Room A403 air temperature"@en .
+
+bld:RoomA403AirHumidity a saref:Humidity ;
+    rdfs:label "Room A403 air humidity"@en .
+
+bld:RoomA403AirCO2 a saref:Property ;
+    rdfs:label "Room A403 air CO2 concentration"@en .
+
+bld:RoomA403Occupancy a saref:Property ;
+    rdfs:label "Room A403 occupancy"@en .
+
+bld:WindowFan_A403_Energy a saref:Energy ;
+    rdfs:label "Window fan energy in A403"@en .
+
+bld:TotalHVACElectricity a saref:Energy ;
+    rdfs:label "Total HVAC electricity"@en .
+
+bld:RoomA403HeatingSetpoint a saref:Temperature ;
+    rdfs:label "Room A403 heating setpoint"@en .
+
+bld:RoomA403CoolingSetpoint a saref:Temperature ;
+    rdfs:label "Room A403 cooling setpoint"@en .
+
+bld:ACFan_A403_Speed a saref:Property ;
+    rdfs:label "AC fan speed command in A403"@en .
+
+bld:WindowFan_A403_Speed a saref:Property ;
+    rdfs:label "Window fan speed command in A403"@en .

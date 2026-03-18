@@ -1,0 +1,15 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 100,
+  "best_validation_total_reward": -143.13820422006148,
+  "best_fan_model_path": "./standalone_results/A403mediumfanger_hot/semantic_madqn_pmv_latent/A403mediumfanger_hot_madqn_pmv_semantic_20260219_112753/madqn_pmv_fan_best.pth",
+  "best_hvac_model_path": "./standalone_results/A403mediumfanger_hot/semantic_madqn_pmv_latent/A403mediumfanger_hot_madqn_pmv_semantic_20260219_112753/madqn_pmv_hvac_best.pth",
+  "output_dir": "./standalone_results/A403mediumfanger_hot/semantic_madqn_pmv_latent/A403mediumfanger_hot_madqn_pmv_semantic_20260219_112753",
+  "semantic": {
+    "use_semantic": true,
+    "semantic_mode": "latent",
+    "semantic_model_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim32/A403mediumfanger_hot/graph_encoder.pt",
+    "semantic_stats_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim32/A403mediumfanger_hot/target_stats.json"
+  }
+}

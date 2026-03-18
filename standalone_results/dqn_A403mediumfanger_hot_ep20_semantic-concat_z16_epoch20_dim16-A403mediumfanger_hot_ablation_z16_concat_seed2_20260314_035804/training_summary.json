@@ -1,0 +1,14 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 20,
+  "best_validation_reward": 47.786075313759284,
+  "output_dir": "/storage/Master/ParallelRL/RL-HVAC/standalone_results/dqn_A403mediumfanger_hot_ep20_semantic-concat_z16_epoch20_dim16-A403mediumfanger_hot_ablation_z16_concat_seed2_20260314_035804",
+  "best_model_path": "/storage/Master/ParallelRL/RL-HVAC/standalone_results/dqn_A403mediumfanger_hot_ep20_semantic-concat_z16_epoch20_dim16-A403mediumfanger_hot_ablation_z16_concat_seed2_20260314_035804/dqn_best.pth",
+  "semantic": {
+    "use_semantic": true,
+    "semantic_mode": "concat",
+    "semantic_model_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim16/A403mediumfanger_hot/graph_encoder.pt",
+    "semantic_stats_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim16/A403mediumfanger_hot/target_stats.json"
+  }
+}

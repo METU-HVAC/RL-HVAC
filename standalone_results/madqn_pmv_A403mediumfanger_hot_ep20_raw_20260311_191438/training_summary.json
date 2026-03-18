@@ -1,0 +1,15 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 20,
+  "best_validation_total_reward": 240.78111341748928,
+  "best_fan_model_path": "./standalone_results/madqn_pmv_A403mediumfanger_hot_ep20_raw_20260311_191438/madqn_pmv_fan_best.pth",
+  "best_hvac_model_path": "./standalone_results/madqn_pmv_A403mediumfanger_hot_ep20_raw_20260311_191438/madqn_pmv_hvac_best.pth",
+  "output_dir": "./standalone_results/madqn_pmv_A403mediumfanger_hot_ep20_raw_20260311_191438",
+  "semantic": {
+    "use_semantic": false,
+    "semantic_mode": null,
+    "semantic_model_path": null,
+    "semantic_stats_path": null
+  }
+}

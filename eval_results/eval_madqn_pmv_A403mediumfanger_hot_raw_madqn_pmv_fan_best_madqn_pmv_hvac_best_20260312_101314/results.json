@@ -1,0 +1,18 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "model_path_fan": "./standalone_results/madqn_pmv_A403mediumfanger_hot_ep20_raw_20260311_191438/madqn_pmv_fan_best.pth",
+  "model_path_hvac": "./standalone_results/madqn_pmv_A403mediumfanger_hot_ep20_raw_20260311_191438/madqn_pmv_hvac_best.pth",
+  "avg_fan_reward": 103.9123374509605,
+  "avg_hvac_reward": -67.08382372441986,
+  "avg_total_reward": 36.828513726540635,
+  "avg_power_kwh": 80.19020080566406,
+  "pmv_violation_pct": 8.33758889474724,
+  "co2_violation_pct": 0.018436578171091445,
+  "semantic": {
+    "use_semantic": false,
+    "semantic_mode": null,
+    "semantic_model_path": null,
+    "semantic_stats_path": null
+  }
+}

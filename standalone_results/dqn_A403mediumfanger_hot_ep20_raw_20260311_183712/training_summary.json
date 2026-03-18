@@ -1,0 +1,14 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 20,
+  "best_validation_reward": 308.31054775692365,
+  "output_dir": "./standalone_results/dqn_A403mediumfanger_hot_ep20_raw_20260311_183712",
+  "best_model_path": "./standalone_results/dqn_A403mediumfanger_hot_ep20_raw_20260311_183712/dqn_best.pth",
+  "semantic": {
+    "use_semantic": false,
+    "semantic_mode": null,
+    "semantic_model_path": null,
+    "semantic_stats_path": null
+  }
+}

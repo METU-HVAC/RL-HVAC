@@ -1,0 +1,99 @@
+# Train semantic graphs for multiple environments/seasons (manual command recipe)
+#
+# Usage:
+#   1) Open terminal
+#   2) Run: source ~/.bashrc && conda activate hvac-rl
+#   3) cd /storage/Master/ParallelRL/RL-HVAC
+#   4) Copy/paste commands below
+#
+# NOTE:
+# train_gnn.py always writes:
+#   semantic/models/graph_encoder.pt
+#   semantic/models/target_stats.json
+# So after each run we copy them into a unique folder to keep every graph.
+
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs
+
+# ------------------------------
+# A403smallfanger
+# ------------------------------
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403smallfanger --season hot --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_hot
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_hot/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_hot/target_stats.json
+
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403smallfanger --season cool --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_cool
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_cool/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_cool/target_stats.json
+
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403smallfanger --season mixed --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_mixed
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_mixed/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403smallfanger_mixed/target_stats.json
+
+# ------------------------------
+# A403mediumfanger
+# ------------------------------
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403mediumfanger --season hot --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_hot
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_hot/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_hot/target_stats.json
+
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403mediumfanger --season cool --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_cool
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_cool/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_cool/target_stats.json
+
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403mediumfanger --season mixed --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_mixed
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_mixed/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_mixed/target_stats.json
+
+# ------------------------------
+# A403largefanger
+# ------------------------------
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403largefanger --season hot --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_hot
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_hot/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_hot/target_stats.json
+
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403largefanger --season cool --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_cool
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_cool/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_cool/target_stats.json
+
+python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py --env-id A403largefanger --season mixed --chunks 8 --epochs 60 --lr 1e-3
+mkdir -p /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_mixed
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_mixed/graph_encoder.pt
+cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403largefanger_mixed/target_stats.json
+
+# Verify all trained graph folders
+find /storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs -maxdepth 2 -type f | sort
+
+
+# For different size latent vectors
+
+cd /storage/Master/ParallelRL/RL-HVAC
+source ~/.bashrc
+conda activate hvac-rl
+
+BASE=/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/epoch20_dim
+ENV=A403mediumfanger
+SEASON=hot
+
+for DIM in 20 24 28 32; do
+  python /storage/Master/ParallelRL/RL-HVAC/semantic/train_gnn.py \
+    --env-id "$ENV" \
+    --season "$SEASON" \
+    --chunks 8 \
+    --epochs 20 \
+    --lr 1e-3 \
+    --latent-dim "$DIM"
+
+  OUT_DIR="${BASE}${DIM}/${ENV}_${SEASON}"
+  mkdir -p "$OUT_DIR"
+  cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_encoder.pt "$OUT_DIR/graph_encoder.pt"
+  cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/target_stats.json "$OUT_DIR/target_stats.json"
+  cp /storage/Master/ParallelRL/RL-HVAC/semantic/models/graph_config.json "$OUT_DIR/graph_config.json"
+done

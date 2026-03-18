@@ -39,6 +39,7 @@ munch==4.0.0
 nest-asyncio==1.6.0
 networkx==3.4.2
 numpy==2.1.2
+optuna==3.6.1
 packaging==24.1
 pandas==2.2.3
 parso==0.8.4

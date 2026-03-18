@@ -1,0 +1,18 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "model_path_fan": "./standalone_results/A403mediumfanger_hot/semantic_madqn_pmv_latent/A403mediumfanger_hot_madqn_pmv_semantic_20260218_145440/madqn_pmv_fan_best.pth",
+  "model_path_hvac": "./standalone_results/A403mediumfanger_hot/semantic_madqn_pmv_latent/A403mediumfanger_hot_madqn_pmv_semantic_20260218_145440/madqn_pmv_hvac_best.pth",
+  "avg_fan_reward": 74.34782598586308,
+  "avg_hvac_reward": -193.29932865949846,
+  "avg_total_reward": -118.95150267363537,
+  "avg_power_kwh": 79.58938598632812,
+  "pmv_violation_pct": 20.8677457664792,
+  "co2_violation_pct": 0.40560471976401175,
+  "semantic": {
+    "use_semantic": true,
+    "semantic_mode": "latent",
+    "semantic_model_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_hot/graph_encoder.pt",
+    "semantic_stats_path": "/storage/Master/ParallelRL/RL-HVAC/semantic/models/graphs/A403mediumfanger_hot/target_stats.json"
+  }
+}

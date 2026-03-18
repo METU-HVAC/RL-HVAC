@@ -1,0 +1,8 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "latent_dim": 16,
+  "epochs": 20,
+  "lr": 0.001,
+  "chunks": 8
+}

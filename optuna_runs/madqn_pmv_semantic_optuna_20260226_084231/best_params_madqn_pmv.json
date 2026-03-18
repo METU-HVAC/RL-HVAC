@@ -1,0 +1,13 @@
+{
+  "study_name": "madqn_pmv_semantic_optuna",
+  "created_at": "2026-02-26T13:58:13.601252",
+  "best_value": -67.4311420109707,
+  "best_params": {
+    "learning_rate": 0.0013727310766520186,
+    "gamma": 0.9510192985090218,
+    "co2_weight": 0.7991678997698177,
+    "tau": 0.0013626529571602415,
+    "eps_decay": 12,
+    "pmv_weight": 0.43460603776522655
+  }
+}
