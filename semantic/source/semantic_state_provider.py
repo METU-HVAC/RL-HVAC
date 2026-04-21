@@ -22,7 +22,8 @@ class SemanticStateProvider:
                  model_path: str = None,
                  mapping_path: str = None,
                  ontology_path: str = None,
-                 stats_path: str = None):
+                 stats_path: str = None,
+                 graph_artifacts_path: str = None):
         """
         Initialize the SemanticStateProvider.
 
@@ -50,8 +51,19 @@ class SemanticStateProvider:
         self.ctx = create_ontology_context(ontology_path)
         self.mapping = load_mapping(mapping_path)
 
-        # 2. Build Graph Structure
-        self.graph = build_graph_structure(self.ctx, self.mapping)
+        default_graph_artifacts_path = os.path.join(semantic_root, "models", "graph_artifacts.json")
+        graph_artifacts_path = graph_artifacts_path or default_graph_artifacts_path
+        self.graph_artifacts = {}
+        if os.path.exists(graph_artifacts_path):
+            with open(graph_artifacts_path, "r") as f:
+                self.graph_artifacts = json.load(f)
+
+        # 2. Build Graph Structure (respect saved topology/pruned edges when available)
+        graph_topology = self.graph_artifacts.get("topology", "star")
+        self.graph = build_graph_structure(self.ctx, self.mapping, topology=graph_topology)
+        pruned_edge_index = self.graph_artifacts.get("pruned_edge_index")
+        if pruned_edge_index:
+            self.graph.edge_index = np.array(pruned_edge_index, dtype=np.int64)
         
         # Pre-compute edge index tensor
         self.edge_index = torch.tensor(self.graph.edge_index, dtype=torch.long).to(self.device)
@@ -74,14 +86,33 @@ class SemanticStateProvider:
             try:
                 state_dict = torch.load(model_path, map_location=self.device)
                 self.hidden_dim, self.latent_dim = self._infer_dims_from_state_dict(state_dict)
-                self.model = GraphEncoder(in_dim, self.hidden_dim, self.latent_dim)
-                self.model.load_state_dict(state_dict)
+                learned_edge_logits = state_dict.get("edge_logits")
+                can_use_learned_edges = (
+                    learned_edge_logits is not None and
+                    learned_edge_logits.shape[0] == self.edge_index.shape[1]
+                )
+                self.model = GraphEncoder(
+                    in_dim,
+                    self.hidden_dim,
+                    self.latent_dim,
+                    num_edges=self.edge_index.shape[1],
+                    learn_edge_weights=can_use_learned_edges
+                )
+                self.model.load_state_dict(state_dict, strict=can_use_learned_edges)
+                if learned_edge_logits is not None and not can_use_learned_edges:
+                    print("Warning: edge_logits shape does not match loaded graph edges. Using fixed adjacency for inference.")
             except RuntimeError as e:
                 print(f"Warning: Failed to load model weights directly: {e}")
                 print("Tip: Ensure the model architecture (hidden_dim, latent_dim) matches the checkpoint.")
                 raise e
         else:
-            self.model = GraphEncoder(in_dim, self.hidden_dim, self.latent_dim)
+            self.model = GraphEncoder(
+                in_dim,
+                self.hidden_dim,
+                self.latent_dim,
+                num_edges=self.edge_index.shape[1],
+                learn_edge_weights=False
+            )
             if using_custom_model:
                 raise FileNotFoundError(f"Model checkpoint not found at {model_path}.")
             print(f"Warning: Model checkpoint not found at {model_path}. Initializing with random weights.")

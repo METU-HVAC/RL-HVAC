@@ -14,7 +14,12 @@ class GraphConvLayer(nn.Module):
         self.linear = nn.Linear(in_features, out_features, bias=False)
         self.bias = nn.Parameter(torch.zeros(out_features))
 
-    def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor,
+        edge_weight: torch.Tensor = None
+    ) -> torch.Tensor:
         """
         Forward pass.
         
@@ -30,7 +35,10 @@ class GraphConvLayer(nn.Module):
         # Create dense adjacency matrix from edge_index (for simplicity)
         # Note: For large graphs, sparse implementation is better.
         adj = torch.zeros((num_nodes, num_nodes), device=x.device)
-        adj[edge_index[0], edge_index[1]] = 1.0
+        if edge_weight is None:
+            adj[edge_index[0], edge_index[1]] = 1.0
+        else:
+            adj[edge_index[0], edge_index[1]] = edge_weight
         
         # Add self-loops
         adj = adj + torch.eye(num_nodes, device=x.device)
@@ -56,7 +64,14 @@ class GraphEncoder(nn.Module):
     """
     Graph Autoencoder-like model that encodes the building state into a room latent vector.
     """
-    def __init__(self, in_dim: int, hidden_dim: int, latent_dim: int):
+    def __init__(
+        self,
+        in_dim: int,
+        hidden_dim: int,
+        latent_dim: int,
+        num_edges: int = 0,
+        learn_edge_weights: bool = False
+    ):
         """
         Initialize the GraphEncoder.
 
@@ -71,6 +86,13 @@ class GraphEncoder(nn.Module):
         self.conv1 = GraphConvLayer(in_dim, hidden_dim)
         self.conv2 = GraphConvLayer(hidden_dim, hidden_dim)
         self.conv3 = GraphConvLayer(hidden_dim, hidden_dim)
+        self.learn_edge_weights = learn_edge_weights
+        self.num_edges = num_edges
+        if self.learn_edge_weights and self.num_edges > 0:
+            # Static, globally learned edge gates in logit space.
+            self.edge_logits = nn.Parameter(torch.zeros(self.num_edges))
+        else:
+            self.register_parameter("edge_logits", None)
         
         # Latent projection: hidden_dim -> latent_dim
         self.to_latent = nn.Linear(hidden_dim, latent_dim)
@@ -111,18 +133,22 @@ class GraphEncoder(nn.Module):
         Returns:
             torch.Tensor: Latent vector z of shape (latent_dim,).
         """
+        edge_weight = None
+        if self.edge_logits is not None:
+            edge_weight = torch.sigmoid(self.edge_logits)
+
         # Layer 1
-        h = self.conv1(x, edge_index)
+        h = self.conv1(x, edge_index, edge_weight=edge_weight)
         h = F.relu(h)
         h = self.dropout(h)
         
         # Layer 2
-        h = self.conv2(h, edge_index)
+        h = self.conv2(h, edge_index, edge_weight=edge_weight)
         h = F.relu(h)
         h = self.dropout(h)
 
         # Layer 3
-        h = self.conv3(h, edge_index)
+        h = self.conv3(h, edge_index, edge_weight=edge_weight)
         h = F.relu(h)
         h = self.dropout(h)
         
@@ -174,3 +200,11 @@ class GraphEncoder(nn.Module):
         z = self.encode(x, edge_index, room_index)
         preds = self.decode(z)
         return z, preds
+
+    def get_edge_weights(self) -> torch.Tensor:
+        """
+        Return current learned edge weights in [0, 1].
+        """
+        if self.edge_logits is None:
+            return torch.empty(0)
+        return torch.sigmoid(self.edge_logits)

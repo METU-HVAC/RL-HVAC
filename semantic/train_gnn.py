@@ -16,7 +16,7 @@ import sys
 import json
 import random
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from tqdm import tqdm
 
 import numpy as np
@@ -161,6 +161,64 @@ def normalize_targets(snapshot: Dict[str, Any], stats: Dict[str, Dict[str, float
     return normalized
 
 
+def prune_edges_by_threshold(
+    edge_index: np.ndarray,
+    edge_weights: np.ndarray,
+    threshold: float
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Prune directed edges using a weight threshold.
+    """
+    if edge_index.size == 0 or edge_weights.size == 0:
+        return edge_index, edge_weights
+
+    mask = edge_weights >= threshold
+    pruned_edge_index = edge_index[:, mask]
+    pruned_edge_weights = edge_weights[mask]
+    return pruned_edge_index, pruned_edge_weights
+
+
+def build_graph_artifacts(
+    graph,
+    model: GraphEncoder,
+    prune_threshold: float
+) -> Dict[str, Any]:
+    """
+    Build graph metadata including learned edge weights and pruned graph.
+    """
+    artifacts: Dict[str, Any] = {
+        "topology": graph.topology,
+        "num_nodes": len(graph.node_uris),
+        "num_edges": int(graph.edge_index.shape[1]) if graph.edge_index.size > 0 else 0,
+        "edge_index": graph.edge_index.tolist(),
+        "room_index": graph.room_index,
+        "node_uris": graph.node_uris,
+        "node_types": graph.node_types,
+        "prune_threshold": prune_threshold,
+    }
+
+    learned_weights = model.get_edge_weights().detach().cpu().numpy()
+    if learned_weights.size > 0:
+        pruned_edge_index, pruned_edge_weights = prune_edges_by_threshold(
+            graph.edge_index,
+            learned_weights,
+            prune_threshold
+        )
+        artifacts["edge_weights"] = learned_weights.tolist()
+        artifacts["mean_edge_weight"] = float(learned_weights.mean())
+        artifacts["pruned_edge_index"] = pruned_edge_index.tolist()
+        artifacts["pruned_edge_weights"] = pruned_edge_weights.tolist()
+        artifacts["num_pruned_edges"] = int(pruned_edge_index.shape[1]) if pruned_edge_index.size > 0 else 0
+    else:
+        artifacts["edge_weights"] = []
+        artifacts["mean_edge_weight"] = 0.0
+        artifacts["pruned_edge_index"] = graph.edge_index.tolist()
+        artifacts["pruned_edge_weights"] = []
+        artifacts["num_pruned_edges"] = int(graph.edge_index.shape[1]) if graph.edge_index.size > 0 else 0
+
+    return artifacts
+
+
 def train_gnn(
     snapshots: List[Dict[str, Any]],
     stats: Dict[str, Dict[str, float]],
@@ -169,8 +227,12 @@ def train_gnn(
     batch_size: int = 32,
     lr: float = 1e-3,
     latent_dim: int = 32,
-    device: str = 'cuda'
-) -> GraphEncoder:
+    device: str = 'cuda',
+    topology: str = "star",
+    learn_edge_weights: bool = False,
+    sparse_lambda: float = 0.0,
+    seed: int = 42
+) -> Tuple[GraphEncoder, List[float], Any]:
     """Train the GNN encoder on collected snapshots."""
     
     device = torch.device(device if torch.cuda.is_available() else 'cpu')
@@ -182,25 +244,32 @@ def train_gnn(
     
     ctx = create_ontology_context(ontology_path)
     mapping = load_mapping(mapping_path)
-    graph = build_graph_structure(ctx, mapping)
+    graph = build_graph_structure(ctx, mapping, topology=topology)
     
     edge_index = torch.tensor(graph.edge_index, dtype=torch.long, device=device)
     
     # Initialize model
     in_dim = get_feature_dim(graph)
     hidden_dim = 64
-    model = GraphEncoder(in_dim, hidden_dim, latent_dim).to(device)
+    model = GraphEncoder(
+        in_dim,
+        hidden_dim,
+        latent_dim,
+        num_edges=edge_index.shape[1],
+        learn_edge_weights=learn_edge_weights
+    ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
     
     # Training loop
     num_samples = len(snapshots)
     indices = list(range(num_samples))
+    rng = random.Random(seed)
     
     losses_history = []
     
     for epoch in range(epochs):
-        random.shuffle(indices)
+        rng.shuffle(indices)
         epoch_loss = 0.0
         num_batches = 0
         
@@ -236,6 +305,8 @@ def train_gnn(
                         batch_loss += criterion(pred_val, target_val.squeeze())
             
             batch_loss = batch_loss / len(batch_indices)
+            if learn_edge_weights and model.edge_logits is not None and sparse_lambda > 0.0:
+                batch_loss = batch_loss + (sparse_lambda * model.get_edge_weights().mean())
             batch_loss.backward()
             optimizer.step()
             
@@ -248,7 +319,7 @@ def train_gnn(
         if (epoch + 1) % 5 == 0 or epoch == 0:
             print(f"Epoch {epoch+1}/{epochs} - Loss: {avg_loss:.6f}")
     
-    return model, losses_history
+    return model, losses_history, graph
 
 
 def main():
@@ -259,6 +330,11 @@ def main():
     parser.add_argument("--epochs", type=int, default=50, help="Training epochs")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument("--latent-dim", type=int, default=32, help="Latent vector size for GraphEncoder")
+    parser.add_argument("--topology", type=str, default="star", choices=["star", "fully_connected"])
+    parser.add_argument("--learn-edge-weights", action="store_true", help="Learn static per-edge weights.")
+    parser.add_argument("--sparse-lambda", type=float, default=1e-3, help="L1-like sparsity regularization weight.")
+    parser.add_argument("--prune-threshold", type=float, default=0.1, help="Threshold for pruning learned edges.")
+    parser.add_argument("--compare-topologies", action="store_true", help="Run matched star vs fully_connected comparison.")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
     
@@ -305,37 +381,97 @@ def main():
     if 'pmv' in stats:
         print(f"PMV stats: mean={stats['pmv']['mean']:.4f}, std={stats['pmv']['std']:.4f}")
     
-    # Train model
-    print("\n🧠 Phase 3: Training GNN encoder...")
-    model, losses = train_gnn(
-        snapshots, stats, semantic_root,
-        epochs=args.epochs, lr=args.lr, latent_dim=args.latent_dim
-    )
-    
-    # Save model
-    model_path = os.path.join(models_dir, "graph_encoder.pt")
-    torch.save(model.state_dict(), model_path)
-    print(f"\n✅ Saved trained model to {model_path}")
+    print("\nPhase 3: Training GNN encoder...")
+
+    run_summaries = []
+    if args.compare_topologies:
+        run_specs = [
+            {"name": "star", "topology": "star", "learn_edge_weights": False},
+            {"name": "fully_connected", "topology": "fully_connected", "learn_edge_weights": True},
+        ]
+    else:
+        run_specs = [
+            {
+                "name": args.topology,
+                "topology": args.topology,
+                "learn_edge_weights": args.learn_edge_weights,
+            }
+        ]
+
+    for spec in run_specs:
+        run_name = spec["name"]
+        print(f"\nTraining run: {run_name} (topology={spec['topology']}, learn_edge_weights={spec['learn_edge_weights']})")
+        model, losses, graph = train_gnn(
+            snapshots,
+            stats,
+            semantic_root,
+            epochs=args.epochs,
+            lr=args.lr,
+            latent_dim=args.latent_dim,
+            topology=spec["topology"],
+            learn_edge_weights=spec["learn_edge_weights"],
+            sparse_lambda=args.sparse_lambda,
+            seed=args.seed,
+        )
+
+        model_filename = "graph_encoder.pt" if len(run_specs) == 1 else f"graph_encoder_{run_name}.pt"
+        model_path = os.path.join(models_dir, model_filename)
+        torch.save(model.state_dict(), model_path)
+        print(f"Saved trained model to {model_path}")
+
+        graph_artifacts = build_graph_artifacts(graph, model, args.prune_threshold)
+        artifacts_filename = "graph_artifacts.json" if len(run_specs) == 1 else f"graph_artifacts_{run_name}.json"
+        artifacts_path = os.path.join(models_dir, artifacts_filename)
+        with open(artifacts_path, "w") as f:
+            json.dump(graph_artifacts, f, indent=2)
+        print(f"Saved graph artifacts to {artifacts_path}")
+
+        run_summary = {
+            "run_name": run_name,
+            "topology": spec["topology"],
+            "learn_edge_weights": spec["learn_edge_weights"],
+            "final_loss": float(losses[-1]),
+            "best_loss": float(min(losses)),
+            "num_nodes": graph_artifacts["num_nodes"],
+            "num_edges": graph_artifacts["num_edges"],
+            "num_pruned_edges": graph_artifacts["num_pruned_edges"],
+            "mean_edge_weight": graph_artifacts["mean_edge_weight"],
+            "model_path": model_path,
+            "graph_artifacts_path": artifacts_path,
+        }
+        run_summaries.append(run_summary)
 
     config_path = os.path.join(models_dir, "graph_config.json")
+    config_payload = {
+        "env_id": args.env_id,
+        "season": args.season,
+        "latent_dim": args.latent_dim,
+        "epochs": args.epochs,
+        "lr": args.lr,
+        "chunks": args.chunks,
+        "seed": args.seed,
+        "sparse_lambda": args.sparse_lambda,
+        "prune_threshold": args.prune_threshold,
+        "compare_topologies": args.compare_topologies,
+        "runs": run_summaries,
+    }
     with open(config_path, "w") as f:
-        json.dump(
-            {
-                "env_id": args.env_id,
-                "season": args.season,
-                "latent_dim": args.latent_dim,
-                "epochs": args.epochs,
-                "lr": args.lr,
-                "chunks": args.chunks,
-            },
-            f,
-            indent=2,
-        )
+        json.dump(config_payload, f, indent=2)
     print(f"Saved graph config to {config_path}")
-    
+
+    if args.compare_topologies:
+        comparison_path = os.path.join(models_dir, "topology_comparison.json")
+        with open(comparison_path, "w") as f:
+            json.dump({"runs": run_summaries}, f, indent=2)
+        print(f"Saved topology comparison to {comparison_path}")
+
     print("\n" + "=" * 60)
     print("Training Complete!")
-    print(f"Final loss: {losses[-1]:.6f}")
+    for summary in run_summaries:
+        print(
+            f"{summary['run_name']}: final_loss={summary['final_loss']:.6f}, "
+            f"edges={summary['num_edges']}, pruned_edges={summary['num_pruned_edges']}"
+        )
     print("=" * 60)
 
 
