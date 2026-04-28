@@ -1,7 +1,7 @@
 {
   "env_id": "A403mediumfanger",
   "season": "hot",
-  "latent_dim": 32,
+  "latent_dim": 8,
   "epochs": 20,
   "lr": 0.001,
   "chunks": 5,
@@ -14,12 +14,12 @@
       "run_name": "fully_connected",
       "topology": "fully_connected",
       "learn_edge_weights": true,
-      "final_loss": 3.698307577768962,
-      "best_loss": 3.698307577768962,
+      "final_loss": 3.469827026128769,
+      "best_loss": 3.469827026128769,
       "num_nodes": 10,
       "num_edges": 90,
       "num_pruned_edges": 90,
-      "mean_edge_weight": 0.4835277199745178,
+      "mean_edge_weight": 0.4793214499950409,
       "model_path": "./semantic/models/graph_encoder.pt",
       "graph_artifacts_path": "./semantic/models/graph_artifacts.json"
     }

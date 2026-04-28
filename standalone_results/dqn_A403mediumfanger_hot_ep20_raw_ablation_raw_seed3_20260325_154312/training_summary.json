@@ -1,0 +1,14 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 20,
+  "best_validation_reward": 60.913480290328756,
+  "output_dir": "/storage/Master/ParallelRL/RL-HVAC/standalone_results/dqn_A403mediumfanger_hot_ep20_raw_ablation_raw_seed3_20260325_154312",
+  "best_model_path": "/storage/Master/ParallelRL/RL-HVAC/standalone_results/dqn_A403mediumfanger_hot_ep20_raw_ablation_raw_seed3_20260325_154312/dqn_best.pth",
+  "semantic": {
+    "use_semantic": false,
+    "semantic_mode": null,
+    "semantic_model_path": null,
+    "semantic_stats_path": null
+  }
+}

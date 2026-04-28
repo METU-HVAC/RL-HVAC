@@ -1,0 +1,16 @@
+{
+  "model_path": "./standalone_results/dqn_A403mediumfanger_hot_ep10_semantic-latent_z16_semantic-models_seed1_20260421_111000/dqn_best.pth",
+  "season": "hot",
+  "env_id": "A403mediumfanger",
+  "avg_reward": -205.16745052580663,
+  "std_reward": 182.98372339136196,
+  "avg_power_kwh": 84.05045318603516,
+  "pmv_violation_pct": 19.533859694768378,
+  "co2_violation_pct": 4.347661742204946,
+  "semantic": {
+    "use_semantic": true,
+    "semantic_mode": "latent",
+    "semantic_model_path": "./semantic/models/graph_encoder.pt",
+    "semantic_stats_path": "./semantic/models/target_stats.json"
+  }
+}

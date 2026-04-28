@@ -1,0 +1,16 @@
+{
+  "model_path": "/storage/Master/ParallelRL/RL-HVAC/standalone_results/dqn_A403mediumfanger_hot_ep20_raw_ablation_raw_seed2_20260325_151501/dqn_best.pth",
+  "season": "hot",
+  "env_id": "A403mediumfanger",
+  "avg_reward": 35.732795929844976,
+  "std_reward": 46.215241805999376,
+  "avg_power_kwh": 87.04348754882812,
+  "pmv_violation_pct": 8.720413527853589,
+  "co2_violation_pct": 2.2096235348376667,
+  "semantic": {
+    "use_semantic": false,
+    "semantic_mode": null,
+    "semantic_model_path": null,
+    "semantic_stats_path": null
+  }
+}

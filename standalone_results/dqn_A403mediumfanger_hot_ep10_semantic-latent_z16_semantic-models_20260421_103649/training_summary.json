@@ -1,0 +1,14 @@
+{
+  "env_id": "A403mediumfanger",
+  "season": "hot",
+  "episodes": 10,
+  "best_validation_reward": -200.68920705865216,
+  "output_dir": "./standalone_results/dqn_A403mediumfanger_hot_ep10_semantic-latent_z16_semantic-models_20260421_103649",
+  "best_model_path": "./standalone_results/dqn_A403mediumfanger_hot_ep10_semantic-latent_z16_semantic-models_20260421_103649/dqn_best.pth",
+  "semantic": {
+    "use_semantic": true,
+    "semantic_mode": "latent",
+    "semantic_model_path": "./semantic/models/graph_encoder.pt",
+    "semantic_stats_path": "./semantic/models/target_stats.json"
+  }
+}
